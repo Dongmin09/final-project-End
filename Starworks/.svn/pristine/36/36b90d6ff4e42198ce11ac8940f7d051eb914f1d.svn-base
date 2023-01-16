@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sw.ddit.meet.mapper.MeetMapper">
+	<select id="roomList" resultType="meetRoomVO">
+		SELECT MEET_NO
+			 , MEET_NM
+			 , MEET_INFO
+		     , MEET_INFO_CAP
+		FROM   MEET_ROOM
+	</select>
+	
+	<select id="bookList" resultType="meetBookVO">
+		SELECT A.BOOK_NO
+		     , A.APP_DT
+		     , A.BOOK_DT
+		     , A.ST_TI
+		     , A.END_TI
+		     , A.BOOK_CON
+		     , A.BOOK_SIT
+		     , A.MEET_NO
+		     , B.EMP_NM
+		FROM   MEET_BOOK A, EMPLOYEE B
+		WHERE  A.EMP_CD = B.EMP_CD
+	</select>
+	
+	<insert id="bookInsert" parameterType="hashMap">
+		INSERT INTO MEET_BOOK(BOOK_NO, BOOK_DT, ST_TI, END_TI, BOOK_CON, MEET_NO, EMP_CD) 
+		VALUES(BOOK_SEQ.NEXTVAL, #{bookDt}, #{stTi}, #{endTi}, #{bookCon}, #{meetNo}, (SELECT EMP_CD FROM EMPLOYEE WHERE EMP_NM = #{empNm}))
+	</insert>
+	
+	<update id="bookDelete" parameterType="hashMap">
+<!-- 		DELETE FROM MEET_BOOK -->
+		UPDATE MEET_BOOK
+		SET    BOOK_SIT = 1
+		WHERE  MEET_NO = #{meetNo}
+		AND    ST_TI = #{stTi}
+	</update>
+</mapper>

@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sw.ddit.attendance.mapper.AttendanceMapper">
+
+   <resultMap type="vacationVO" id="vacationMap">
+   		<result property="empCd" column="EMP_CD"/> 
+   		<result property="yearCnt" column="YEAR_CNT"/>
+   </resultMap>
+   
+   <resultMap type="AuthVO" id="authMap">
+   		<result property="empCd" column="EMP_CD"/>
+   		<result property="authCd" column="AUTH_CD"/>
+   </resultMap>
+
+	<resultMap type="empVO" id="empMap">
+		<result property="empCd" column="EMP_CD" />
+		<result property="empId" column="EMP_ID" />
+		<result property="empPw" column="EMP_PW" />
+		<result property="empNm" column="EMP_NM" />
+		<result property="empEml" column="EMP_EML" />
+		<result property="post" column="POST" />
+		<result property="addr" column="ADDR" />
+		<result property="detAddr" column="DET_ADDR" />
+		<result property="empTel" column="EMP_TEL" />
+		<result property="empSignDt" column="EMP_SIGN_DT" />
+		<result property="posiCd" column="POSI_CD" />
+		<result property="failCnt" column="FAIL_CNT" />
+		<result property="empSitCd" column="EMP_SIT_CD" />
+		<result property="apprSignPath" column="APPR_SIGN_PATH" />
+		<result property="profile" column="PROFILE" />
+		<result property="enabled" column="ENABLED" />
+		<result property="depCd" column="DEP_CD" />
+       <collection property="vacationList" resultMap="vacationMap" />
+       <collection property="employeeAuthVOList" resultMap="authMap" />
+   </resultMap>
+
+	<select id="empDetail" parameterType="empVO" resultMap="empMap">
+		SELECT
+		                A.EMP_CD
+		            ,   A.EMP_ID
+		            ,   A.EMP_PW
+		            ,   A.EMP_NM
+		            ,   A.EMP_EML
+		            ,   A.POST
+		            ,   A.ADDR
+		            ,   A.DET_ADDR
+		            ,   A.EMP_TEL
+		            ,   A.EMP_SIGN_DT
+		            ,   A.POSI_CD
+		            ,   A.FAIL_CNT
+		            ,   A.EMP_SIT_CD
+		            ,   A.APPR_SIGN_PATH
+		            ,   A.PROFILE
+		            ,   A.ENABLED
+		            ,   A.DEP_CD  
+		            , 	B.YEAR_CNT
+
+		            ,	C.AUTH_CD
+		FROM EMPLOYEE A, VACATION B, AUTH C
+		WHERE  A.EMP_CD = B.EMP_CD(+)
+		AND A.EMP_CD = C.EMP_CD
+		AND A.EMP_CD = #{empCd} 
+	</select>
+	
+	<!-- 출근 확인 -->
+	<select id="checkGo" parameterType="attendanceVO" resultType="attendanceVO">
+		SELECT 
+					AFF_DT
+					, EMP_CD
+					, AFF_ATT
+		FROM ATTENDANCE
+		WHERE AFF_DT = TO_CHAR(SYSDATE,'YYYY-MM-DD')
+		AND EMP_CD = #{empCd}
+	</select>
+	
+	
+	<!-- 출근 하기 -->
+	<insert id="goWork"  parameterType="attendanceVO">
+		INSERT INTO ATTENDANCE (
+		              REG_DT
+		            , AFF_ATT
+		            , AFF_DT
+		            , EMP_CD
+		            , WORK_SIT_CD
+		            )
+		VALUES (
+		            SYSDATE
+		            , TO_CHAR(SYSTIMESTAMP, 'HH24:MI:SS')
+		            , TO_CHAR(SYSTIMESTAMP,'YYYY-MM-DD')
+		            , #{empCd}
+		            , 'T00'
+		)		
+	</insert>
+
+	<!-- 퇴근하기!! -->
+	<update id="leaveWork" parameterType="attendanceVO">
+		UPDATE ATTENDANCE
+			SET         NON_ATT = TO_CHAR(SYSTIMESTAMP, 'HH24:Mi:SS')
+			, WORK_SIT_CD = 
+				CASE
+					WHEN (SELECT TO_NUMBER(SUBSTR(TO_CHAR(SYSTIMESTAMP, 'HH24:Mi:SS'),1,2)) - (SELECT SUBSTR(AFF_ATT,1,2) FROM ATTENDANCE  WHERE  AFF_DT = TO_CHAR(SYSDATE,'YYYY-MM-DD')  AND EMP_CD = #{empCd}) AS TIME 
+					FROM ATTENDANCE WHERE AFF_DT = (SELECT TO_CHAR(SYSDATE,'YYYY-MM-DD') FROM DUAL) AND EMP_CD = #{empCd})<![CDATA[ > ]]>8 THEN 'T00'
+					WHEN (SELECT SUBSTR(TO_CHAR(SYSDATE, 'HH24:MI:SS'),1,2) AS TIME FROM ATTENDANCE  WHERE  AFF_DT = TO_CHAR(SYSDATE,'YYYY-MM-DD')  AND EMP_CD = #{empCd}) <![CDATA[ < ]]>16 THEN 'T01' 
+					ELSE 'T02' 
+					END
+			WHERE   AFF_DT = (SELECT TO_CHAR(SYSDATE,'YYYY-MM-DD') FROM DUAL)
+			AND EMP_CD = #{empCd}
+	</update>
+	
+	<!-- 출근일 확인하기!! -->
+	<select id="dutyCheck" parameterType="attendanceVO" resultType="attendanceVO">
+		SELECT 
+		 				REG_DT
+		              , AFF_ATT
+		              , AFF_DT
+		              , NON_ATT
+		            , (SELECT  COMM_CD_NM FROM COMMON B WHERE A.WORK_SIT_CD = B.COMM_CD) AS WORK_SIT_CD
+		FROM ATTENDANCE A
+		WHERE EMP_CD = #{empCd}
+	</select>
+	<!-- 휴가 확인하기 -->
+	<select id="vacationCheck" parameterType="attendanceVO" resultType="attendanceVO">
+			SELECT DISTINCT(TO_CHAR(TO_DATE(VAC_DT,'YYYY-MM-DD') + (LEVEL-1), 'YYYY-MM-DD')) AS  AFF_DT
+			            , A.VAC_DIV_CD AS WORK_SIT_CD
+			            , A.USE_CNT
+			            , A.VAC_DT AS NON_ATT
+			FROM VAC_USE A, APPROVAL B
+			WHERE A.APPR_NO = B.APPR_NO
+			AND B.EMP_CD =  #{empCd}
+			AND B.APPR_SIT_CD = 'A02'
+		<![CDATA[	CONNECT BY LEVEL  <= (TO_DATE(VAC_DT,'YYYY-MM-DD')+A.USE_CNT) - TO_DATE(VAC_DT,'YYYY-MM-DD') ]]>
+	</select>
+	
+	<!-- 하위 직원들 근태확인.. -->
+	<select id="empAttend" parameterType="calendarVO"  resultType="calendarVO">
+		SELECT	ROWNUM AS ID 
+					, B.EMP_NM||'     '||(SELECT  COMM_CD_NM FROM COMMON B WHERE A.WORK_SIT_CD = B.COMM_CD)  AS TITLE
+		            , A.AFF_DT||'T'||A.AFF_ATT AS "START"
+		            , A.AFF_DT||'T'||A.NON_ATT AS "END"
+		FROM EMPLOYEE B, ATTENDANCE A
+		WHERE A.EMP_CD = B.EMP_CD(+)
+		AND B.DEP_CD = #{depCd}
+		AND SUBSTR(POSI_CD,2) <![CDATA[ < ]]> (SELECT SUBSTR(POSI_CD,2) FROM EMPLOYEE WHERE EMP_CD = #{empCd})	
+	</select>
+	
+	<resultMap type="vacVO" id="vacUseMap">
+		<result property="apprNo" column="APPR_NO" />
+		<result property="vacDt" column="VAC_DT" />
+		<result property="vacUseRea" column="VAC_USE_REA" />
+		<result property="vacDivCd" column="VAC_DIV_CD" />
+		<result property="useCnt" column="USE_CNT" />
+	</resultMap>
+	
+	<resultMap type="vacApprVO" id="vacApprMap">
+		<result property="apprNo" column="APPR_NO" />
+		<result property="apprTit" column="APPR_TIT" />
+		<result property="regDt" column="REG_DT" />
+		<result property="formCon" column="FORM_CON" />
+		<result property="empCd" column="EMP_CD" />
+		<result property="formNo" column="FORM_NO" />
+		<result property="apprSitCd" column="APPR_SIT_CD" />
+		<result property="depCd" column="DEP_CD" />
+		<result property="depNm" column="DEP_NM" />
+		<collection property="vacUseVOList" resultMap="vacUseMap"></collection>
+	
+	</resultMap>
+	
+
+	<!-- 연차 사용일 수 구하기 -->
+ 	<select id="useCount"  parameterType="vacVO" resultMap="vacApprMap">
+		SELECT TO_DATE(VAC_DT) AS VAC_DT
+            		, A.USE_CNT
+		FROM VAC_USE A, APPROVAL B
+		WHERE A.APPR_NO = B.APPR_NO
+		AND B.EMP_CD = #{empCd}
+		AND B.APPR_SIT_CD = 'A02'
+		AND TO_DATE(VAC_DT) 
+		BETWEEN (SELECT TO_DATE(TO_CHAR(SYSDATE, 'YYYY')||'01','YYYYMM') FROM DUAL) 
+		AND (SELECT TO_DATE(TO_CHAR(SYSDATE, 'YYYY')||'12'||'31','YYYYMMDD') FROM DUAL)
+ 	</select>
+ 	
+ 	<!-- 이번주 근무시간 구하기!! -->
+ 	<select id="weekTime" parameterType="attendanceVO" resultType="attendanceVO">
+		SELECT (AFF_DT||' '||AFF_ATT) AFF_ATT
+					,  (AFF_DT||' '||NON_ATT) NON_ATT
+					,  EMP_CD
+		FROM  ATTENDANCE
+		WHERE EMP_CD = #{empCd}
+		AND NON_ATT IS NOT NULL
+		AND REG_DT BETWEEN (SELECT TRUNC(sysdate, 'iw')  FROM DUAL)
+		AND (SELECT TRUNC(sysdate,'iw')+5 FROM DUAL)	
+ 	</select>
+ 	
+ 	<!-- 이번달 근무시간 구하기 -->
+ 	<select id="monthTime" parameterType="attendanceVO" resultType="attendanceVO">
+ 		SELECT (AFF_DT||' '||AFF_ATT) AFF_ATT
+		            , (AFF_DT||' '||NON_ATT) NON_ATT
+		            , EMP_CD
+		FROM  ATTENDANCE
+		WHERE EMP_CD = #{empCd}
+		AND NON_ATT IS NOT NULL
+		AND REG_DT BETWEEN (SELECT TRUNC(sysdate,'MM')  FROM DUAL)
+		AND (SELECT LAST_DAY(sysdate) FROM DUAL)
+ 	</select>
+ 	
+</mapper>
+
+
+
+
+
+
+
+
+
+

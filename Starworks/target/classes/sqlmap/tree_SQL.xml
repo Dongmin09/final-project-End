@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace : xml파일은 여러개일 수 있음. 
+이를 구별하기 위한 식별 용도로 사용 -->
+<mapper namespace="com.sw.ddit.tree.mapper.TreeMapper">
+	<select id="tree" parameterType="treeVO" resultType="treeVO">
+		SELECT DEP_CD AS ID
+		        ,    DEP_NM AS TEXT
+		        ,   DEP_PAR AS PARENT
+		FROM DEPARTMENT
+		ORDER BY DEP_CD ASC
+		
+	</select>
+
+   <resultMap type="treeVO" id="treeMap">
+      <result property="id" column="ID" />
+      <result property="text" column="TEXT" />
+      <result property="parent" column="PARENT" />
+   </resultMap>
+	
+<resultMap type="empVO" id="empTree">
+		<result property="empCd" column="EMP_CD" />
+		<result property="empId" column="EMP_ID" />
+		<result property="empPw" column="EMP_PW" />
+		<result property="empNm" column="EMP_NM" />
+		<result property="empEml" column="EMP_EML" />
+		<result property="post" column="POST" />
+		<result property="addr" column="ADDR" />
+		<result property="detAddr" column="DET_ADDR" />
+		<result property="empTel" column="EMP_TEL" />
+		<result property="empSignDt" column="EMP_SIGN_DT" />
+		<result property="sign" column="SIGN" />
+		<result property="posiCd" column="POSI_CD" />
+		<result property="failCnt" column="FAIL_CNT" />
+		<result property="empSitCd" column="EMP_SIT_CD" />
+		<result property="apprSignPath" column="APPR_SIGN_PATH" />
+		<result property="profile" column="PROFILE" />
+		<result property="enabled" column="ENABLED" />
+		<result property="depCd" column="DEP_CD" />
+		<collection property="jstreeList" resultMap="treeMap"></collection>
+   </resultMap>
+
+   
+   <select id="empTree" parameterType="String" resultMap="empTree">
+		SELECT EMP_CD AS ID
+			, B.COMM_CD_NM ||' '|| EMP_NM AS TEXT
+			, DEP_CD AS PARENT
+		FROM EMPLOYEE A, COMMON B
+        WHERE B.COMM_CD = A.POSI_CD
+        ORDER BY COMM_CD DESC
+   </select>
+   
+   <select id="empInfo" parameterType="string" resultType="empVO">
+		SELECT
+              EMP_CD
+            , EMP_ID
+            , EMP_PW
+            , EMP_NM
+            , EMP_EML
+            , POST
+            , ADDR
+            , DET_ADDR
+            , EMP_TEL
+            , EMP_SIGN_DT
+		    , (SELECT COMM_CD_NM FROM  COMMON B WHERE A.POSI_CD = B.COMM_CD) AS POSI_CD
+            , FAIL_CNT
+            , (SELECT COMM_CD_NM FROM  COMMON B WHERE A.EMP_SIT_CD = B.COMM_CD) AS EMP_SIT_CD
+            , APPR_SIGN_PATH
+            , PROFILE
+            , ENABLED
+            , SIGN
+           , (SELECT DEP_NM FROM DEPARTMENT B WHERE A.DEP_CD = B.DEP_CD) AS DEP_CD  
+		FROM EMPLOYEE A
+		WHERE EMP_CD = #{empCd}
+	</select>
+
+</mapper>
+
+
+
+
+
+
+
+
+
+

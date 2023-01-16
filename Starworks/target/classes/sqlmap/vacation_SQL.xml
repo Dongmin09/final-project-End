@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<mapper namespace="com.sw.ddit.approval.mapper.VacationMapper">
+	
+<insert id="vacationInsert" parameterType="apprVO">
+	<selectKey  resultType="string" order="BEFORE" keyProperty="apprNo">
+		SELECT 'A'||TO_CHAR(SYSDATE,'YYMMDD')||TO_CHAR(NVL(MAX(SUBSTR(APPR_NO,8)),0) +1)
+		FROM APPROVAL
+		WHERE SUBSTR(APPR_NO,2,6) = TO_CHAR(SYSDATE,'YYMMDD')
+	</selectKey>
+	INSERT INTO APPROVAL (
+					APPR_NO
+					, APPR_TIT
+					, REG_DT
+					, FORM_CON
+					, EMP_CD
+					, FORM_NO
+					, APPR_SIT_CD
+					, DEP_CD
+					, DEP_NM)
+	VALUES (
+					#{apprNo}
+					, #{apprTit}
+					, SYSDATE
+					, #{formCon}
+					, #{empCd}
+					, '2'
+					, 'A00'
+					, #{depCd}
+					, #{depNm}
+					)
+
+</insert>
+
+<!-- 파라미터 : List<LineSeqVO> lineSeqVOList -->
+<update id="vacationInsert2" parameterType="java.util.List">
+	<foreach collection="list"  item="lineSeqVO"  open="INSERT ALL"  close="SELECT * FROM DUAL"  separator=" ">
+		INTO LINE_SEQ(LINE_TURN, APPR_NO, APPR_SIT_CD, APPR_DT, LINE_YN, EMP_CD, APPR_NM)
+		VALUES(#{lineSeqVO.lineTurn}, #{lineSeqVO.apprNo}, #{lineSeqVO.apprSitCd}, SYSDATE, 'N', #{lineSeqVO.empCd},
+		(SELECT EMP_NM FROM EMPLOYEE WHERE EMP_CD = #{lineSeqVO.empCd}))
+	</foreach>
+</update>
+
+
+	<resultMap type="empVO" id="employeeMap">
+		<result property="empCd" column="EMP_CD" />
+		<result property="empId" column="EMP_ID" />
+		<result property="empPw" column="EMP_PW" />
+		<result property="empNm" column="EMP_NM" />
+		<result property="empEml" column="EMP_EML" />
+		<result property="post" column="POST" />
+		<result property="addr" column="ADDR" />
+		<result property="detAddr" column="DET_ADDR" />
+		<result property="empTel" column="EMP_TEL" />
+		<result property="empSignDt" column="EMP_SIGN_DT" />
+		<result property="sign" column="SIGN" />
+		<result property="posiCd" column="POSI_CD" />
+		<result property="failCnt" column="FAIL_CNT" />
+		<result property="empSitCd" column="EMP_SIT_CD" />
+		<result property="apprSignPath" column="APPR_SIGN_PATH" />
+		<result property="profile" column="PROFILE" />
+		<result property="enabled" column="ENABLED" />
+		<result property="depCd" column="DEP_CD" />
+   </resultMap>
+   
+   <resultMap type="apprVO" id="apprMap">
+   		<result property="apprNo" column="APPR_NO" />
+		<result property="apprTit" column="APPR_TIT" />
+		<result property="regDt" column="REG_DT" />
+		<result property="formCon" column="FORM_CON" />
+		<result property="empCd" column="EMP_CD" />
+		<result property="formNo" column="FORM_NO" />
+		<result property="apprSitCd" column="APPR_SIT_CD" />
+		<result property="depCd" column="DEP_CD" />
+		<result property="depNm" column="DEP_NM" />
+		<collection property="empVOList" resultMap="employeeMap" />
+   </resultMap>
+
+<resultMap type="lineVO" id="lineMap">
+	<result property="lineTurn" column="LINE_TURN" />
+	<result property="apprNo" column="APPR_NO" />
+	<result property="apprSitCd" column="APPR_SIT_CD" />
+	<result property="apprRea" column="APPR_REA" />
+	<result property="apprDt" column="APPR_DT" />
+	<result property="lineYn" column="LINE_YN" />
+	<result property="empCd" column="EMP_CD" />
+	<result property="apprNm" column="APPR_NM" />
+	<collection property="empVOList" resultMap="employeeMap" />
+</resultMap>
+<!-- 결재 내용 정보 불러오기 -->
+<select id="vacList" parameterType="apprVO" resultMap="apprMap">
+	SELECT
+				 A.APPR_NO
+				 , A.APPR_TIT
+				 , A.REG_DT
+				 , A.FORM_CON
+				 , A.EMP_CD
+				 , A.FORM_NO
+				 , A.APPR_SIT_CD
+				 , A.DEP_CD
+				 , A.DEP_NM
+				 , B.SIGN
+				 , (SELECT COMM_CD_NM FROM  COMMON C WHERE B.POSI_CD = C.COMM_CD) AS POSI_CD
+				 , B.EMP_NM
+				 , B.EMP_TEL
+	FROM APPROVAL A, EMPLOYEE B
+	WHERE A.EMP_CD = B.EMP_CD
+	AND APPR_NO = #{apprNo}
+</select>
+
+<!-- 상신한 결재라인 불러오기 -->
+<select id="lineList" parameterType="lineVO" resultMap="lineMap">
+	SELECT A.LINE_TURN
+	, A.APPR_NO
+	, A.APPR_SIT_CD
+	, A.APPR_REA, A.APPR_DT
+	, A.LINE_YN
+	, A.EMP_CD
+	, A.APPR_NM
+	, (SELECT COMM_CD_NM FROM  COMMON C WHERE B.POSI_CD = C.COMM_CD) AS POSI_CD
+	, B.SIGN
+	, B.EMP_NM
+	FROM LINE_SEQ A , EMPLOYEE B
+	WHERE A.EMP_CD = B.EMP_CD
+	AND APPR_NO = #{apprNo}
+</select>
+
+<!-- 결재 완료/반려시 상태 변경 -->
+<!-- 결재자 업데이트 -->
+	<update id="apprFinish" parameterType="lineVO">
+		UPDATE LINE_SEQ
+		SET 	APPR_SIT_CD = #{apprSitCd}
+			      , APPR_REA = #{apprRea}
+		WHERE APPR_NO = #{apprNo}
+		AND EMP_CD = #{empCd}
+	</update>
+	<!-- 상신자 업데이트 -->
+	<update id="reporterFinish" parameterType="apprVO">
+		UPDATE APPROVAL
+		SET APPR_SIT_CD = #{apprSitCd}
+		WHERE APPR_NO = #{apprNo}	
+	</update>
+	<!-- 결재 승인되면 사용내역에 등록 -->
+	<insert id="vacationUse" parameterType="vacVO">
+		<selectKey  resultType="int" order="BEFORE" keyProperty="useCnt">
+			(SELECT (TO_DATE( SUBSTR(FORM_CON,15,10))) -TO_DATE(SUBSTR(FORM_CON,4,10)) +1 FROM APPROVAL WHERE APPR_NO = #{apprNo}) 
+		</selectKey>
+		INSERT INTO VAC_USE (
+					APPR_NO
+					, VAC_DT
+					, VAC_USE_REA
+					, VAC_DIV_CD
+					, USE_CNT)
+		VALUES (
+					#{apprNo}
+					, #{vacDt}
+					, #{vacUseRea}
+					, #{vacDivCd}
+					, #{useCnt} 
+					)
+	</insert>
+	
+	<!-- 결재가 승인되면 나의 연차 갯수를 차감하기 -->
+	<update id="minusVacation" parameterType="vacationVO">
+		<selectKey  resultType="int" order="BEFORE" keyProperty="yearCnt">
+			SELECT C.YEAR_CNT - TO_NUMBER((TO_DATE( SUBSTR(B.FORM_CON,15,10))+1) -TO_DATE(SUBSTR(B.FORM_CON,4,10))) AS YEAR_CNT
+			FROM APPROVAL B, VACATION C
+			WHERE B.EMP_CD = C.EMP_CD
+			AND B.APPR_NO = #{apprNo} 
+		</selectKey>
+		UPDATE VACATION
+		SET
+				YEAR_CNT = #{yearCnt}
+		WHERE  EMP_CD = #{empCd}
+	</update>
+
+</mapper>

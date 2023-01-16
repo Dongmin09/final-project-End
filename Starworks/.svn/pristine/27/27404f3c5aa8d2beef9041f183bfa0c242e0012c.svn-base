@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace : xml파일은 여러개일 수 있음. 
+이를 구별하기 위한 식별 용도로 사용 -->
+<mapper namespace="com.sw.ddit.notice.mapper.NoticeMapper">
+	
+	<!-- 공지사항 리스트 조회 -->
+	<select id="selectNotiList" resultType="egovframework.rte.psl.dataaccess.util.EgovMap">
+		SELECT ROWNUM RNUM, X.* 	
+		FROM (
+		    SELECT 
+		        A.NOTI_NO
+		        , A.TIT
+		        , A.CON
+		        , TO_CHAR(A.REG_DT,'YY"년 "MM"월 "DD"일"') REG_DT
+		        , A.VIEW_CNT
+		        , A.EMP_CD
+		        , B.EMP_NM
+		    FROM  NOTICE A
+		    LEFT OUTER JOIN EMPLOYEE B ON (A.EMP_CD = B.EMP_CD)
+		    ORDER BY A.NOTI_NO 
+		) X
+	</select>
+	
+	<!-- 메인공지사항 리스트 조회 -->
+	<select id="mainNotiList" resultType="egovframework.rte.psl.dataaccess.util.EgovMap">
+	    SELECT 
+	        A.NOTI_NO
+	        , A.TIT
+	        , A.CON
+	        , TO_CHAR(A.REG_DT,'YY"년 "MM"월 "DD"일"') REG_DT
+	        , A.VIEW_CNT
+	        , A.EMP_CD
+	        , B.EMP_NM
+	    FROM  NOTICE A
+	    LEFT OUTER JOIN EMPLOYEE B ON (A.EMP_CD = B.EMP_CD)
+	    WHERE ROWNUM &lt;= 5
+	    ORDER BY A.NOTI_NO 
+	</select>
+	
+	<!-- 공지사항 상세 조회 -->
+	<select id="selectNotiDetail" parameterType="com.sw.ddit.notice.vo.NoticeVO" resultType="com.sw.ddit.notice.vo.NoticeVO">
+		SELECT 
+		    A.NOTI_NO
+		    , A.TIT
+		    , A.CON
+		    , TO_CHAR(A.REG_DT,'YY"년 "MM"월 "DD"일"') REG_DT
+		    , A.VIEW_CNT
+		    , A.EMP_CD
+		    , A.ATCH_FILE_CD
+		    , A.NO
+		    , B.EMP_NM
+		FROM NOTICE A
+		LEFT OUTER JOIN EMPLOYEE B ON (A.EMP_CD = B.EMP_CD)
+		WHERE A.NOTI_NO = #{notiNo}
+	</select>
+	
+	<!-- 공지사항 조회수 +1 -->
+	<update id="updateNotiViewCnt" parameterType="int">
+		UPDATE
+			NOTICE
+		SET VIEW_CNT =
+			(SELECT MAX(VIEW_CNT)+1 FROM NOTICE WHERE NOTI_NO = #{notiNo})
+		WHERE NOTI_NO = #{notiNo}
+	</update>
+	
+	<!-- 공지사항 등록 -->
+	<insert id="insertNoti" parameterType="com.sw.ddit.notice.vo.NoticeVO">
+		<selectKey keyProperty="notiNo" resultType="int" order="BEFORE">
+			SELECT NVL(MAX(NOTI_NO),0)+1 FROM NOTICE
+		</selectKey>
+
+		INSERT INTO NOTICE 
+		(
+			NOTI_NO
+			, TIT
+			, CON
+			, REG_DT
+			, VIEW_CNT
+			, EMP_CD
+			<if test="@org.apache.commons.lang3.StringUtils@isNotEmpty(atchFileCd)">
+			, ATCH_FILE_CD
+			</if>
+		)
+		VALUES
+		(
+			#{notiNo}
+			, #{tit}
+			, #{con}
+			, TO_DATE(sysdate,'YYYY-MM-DD')
+			, #{viewCnt}
+			, #{empCd}
+			<if test="@org.apache.commons.lang3.StringUtils@isNotEmpty(atchFileCd)">
+			, #{atchFileCd}
+			</if>
+		)
+	</insert>
+	
+	<!-- 공지사항 삭제 -->
+	<delete id="deleteNoti" parameterType="int">
+		DELETE FROM NOTICE 
+		WHERE NOTI_NO = #{notiNo}
+	</delete>
+	
+	<update id="updateNoti" parameterType="com.sw.ddit.notice.vo.NoticeVO">
+		UPDATE NOTICE  
+		SET 
+			TIT = #{tit},
+			CON = #{con},
+			REG_DT = TO_CHAR(sysdate,'YYYY-MM-DD'),
+			EMP_CD = #{empCd}
+		WHERE NOTI_NO = #{notiNo}
+	</update>
+	
+	<!-- 첨부파일 등록 -->
+	<insert id="insertNotiFile" parameterType="com.sw.ddit.common.vo.AttachFileVO" >
+		<selectKey keyProperty="atchFileCd" resultType="String" order="BEFORE">
+			SELECT 
+				'FILE'|| LPAD(NVL(MAX(SUBSTR(ATCH_FILE_CD,5,3)),0)+1,3,'0')   
+			FROM TOTAL_ATCH_FILE 
+			WHERE SUBSTR(ATCH_FILE_CD,1,4) = 'FILE'
+		</selectKey>
+		
+		INSERT INTO TOTAL_ATCH_FILE
+		(
+			ATCH_FILE_CD
+			, ATCH_FILE_NO
+			, ATCH_FILE_NM
+			, ATCH_FILE_PATH
+			, ATCH_FILE_EXTEN
+			, ATCH_FILE_UPLO_DT
+			, ATCH_FILE_SIZE
+			, ATCH_FILE_ORG_NM
+			, FILE_SIT_CD
+		)
+		VALUES
+		(
+			#{atchFileCd },
+			1, 					<!-- 공지사항은 list가 아니라서 하드코딩함 -->
+			#{atchFileNm },
+			#{atchFilePath },
+			#{atchFileExten },
+			TO_CHAR(sysdate,'YYYY-MM-DD'),
+			#{atchFileSize },
+			#{atchFileOrgNm },
+			'1'
+		)
+	
+	</insert>
+	
+	
+	<!-- 게시글 첨부파일 삭제  -->
+	<delete id="deleteNotiFile" parameterType="com.sw.ddit.notice.vo.NoticeVO">
+		DELETE FROM TOTAL_ATCH_FILE 
+		WHERE ATCH_FILE_CD  = (
+			SELECT ATCH_FILE_CD
+			FROM NOTICE 
+			WHERE NOTI_NO = #{notiNo}
+		)
+	</delete>
+	
+	<!-- 게시글 첨부파일 상세조회 -->
+	<select id="selectNotiFileDetail" parameterType="com.sw.ddit.common.vo.AttachFileVO" resultType="com.sw.ddit.common.vo.AttachFileVO">
+		SELECT 
+			X.ATCH_FILE_CD 
+			, X.ATCH_FILE_NO 
+			, X.ATCH_FILE_NM 
+			, X.ATCH_FILE_PATH 
+			, X.ATCH_FILE_EXTEN 
+			, X.ATCH_FILE_ORG_NM
+		FROM NOTICE A RIGHT OUTER JOIN TOTAL_ATCH_FILE X 
+		ON (A.ATCH_FILE_CD = X.ATCH_FILE_CD)
+		WHERE NOTI_NO = #{notiNo}
+	</select>
+	
+	<!-- 공지사항 첨부파일 단건 삭제  -->
+	<delete id="deleteFile" parameterType="com.sw.ddit.common.vo.AttachFileVO">
+		DELETE FROM TOTAL_ATCH_FILE
+		WHERE ATCH_FILE_CD = #{atchFileCd}
+	</delete>
+	
+</mapper>

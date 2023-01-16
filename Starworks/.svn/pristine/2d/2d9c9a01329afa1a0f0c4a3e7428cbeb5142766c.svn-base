@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sw.ddit.company.mapper.CompanyMapper">
+
+	<resultMap type="companyVO" id="companyMap">
+		<result property="coCd" column="CO_CD" />
+		<result property="coNm" column="CO_NM" />
+		<result property="coTelNum" column="CO_TEL_NUM" />
+		<result property="url" column="URL" />
+		<result property="ocptCd" column="OCPT_CD" />
+		<result property="coBrNum" column="CO_BR_NUM" />
+   </resultMap>
+   
+	<!-- 회사 회원가입 -->
+	<insert id="insertCom" parameterType="companyVO">
+		INSERT INTO COMPANY(
+				CO_CD
+			  , CO_NM
+			  , CO_TEL_NUM
+			  , URL
+			  , OCPT_CD
+			  , CO_BR_NUM)
+		VALUES(
+			    (SELECT TO_CHAR(SYSDATE, 'YYMMDD')||TO_CHAR(NVL(MAX(SUBSTR(CO_CD,7)),0)+1, 'FM000')
+		        FROM COMPANY
+				WHERE CO_CD LIKE TO_CHAR(SYSDATE, 'YYMMDD')||'%')
+			  , #{coNm}
+			  , #{coTelNum}
+			  , #{url}
+			  , #{ocptCd}
+			  , #{coBrNum})
+	</insert>
+	
+	<select id="checkURL" parameterType="String" resultType="int">
+		SELECT COUNT(URL)
+		FROM    COMPANY
+		WHERE   URL = #{url}
+	</select>
+	
+</mapper>
+
+
+
+
+
+
+
+
+
+

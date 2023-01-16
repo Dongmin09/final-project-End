@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sw.ddit.calendar.mapper.CalendarMapper">
+
+	<!-- 일정 보이게 하기!! -->
+	<select id="mySchedule" resultType="calendarVO" parameterType="calendarVO">
+		SELECT 
+		            CALD_CD AS ID
+		            , TITLE
+		            , STA AS "START"
+		            , END_TIME AS "END"
+		            , ALL_DAY
+		            , EMP_CD
+		            , COLOR
+		            , TEXT_COLOR
+		FROM CALENDER
+		WHERE EMP_CD = #{empCd}
+	</select>
+	
+	<!-- 일정 추가하기 -->
+	<insert id="insertSchedule" parameterType="calendarVO">
+	<selectKey resultType="int" order="BEFORE" keyProperty="caldCd">
+		SELECT NVL(MAX(TO_NUMBER(CALD_CD)),0) +1
+		FROM  CALENDER
+	</selectKey>
+		INSERT INTO CALENDER(
+								CALD_CD
+								, TITLE
+								, REG_DT
+								, STA
+								, END_TIME
+								, ALL_DAY
+								, EMP_CD
+								, COLOR
+								, TEXT_COLOR
+								)
+		VALUES(
+						#{caldCd}
+						, #{title}
+						, SYSDATE
+						, #{sta}
+						, #{endTime}
+						, #{allDay}
+						, #{empCd}
+						, #{color}
+						, #{textColor}
+						)
+	</insert>
+	
+	<!-- 일정 삭제하기 -->
+	<delete id="removeSchedule" parameterType="calendarVO">
+		DELETE FROM CALENDER
+		WHERE EMP_CD = #{empCd} AND CALD_CD = #{caldCd}
+	</delete>
+	<!-- 예약된 회의 일정 삭제하기 -->
+	<delete id="meetRemove" parameterType="calendarVO">
+		DELETE FROM CALENDER
+		WHERE EMP_CD = #{empCd}
+		AND STA= #{sta}
+		AND TITLE = #{title}
+	</delete>
+	<!-- TODO 일정 삭제하기 -->
+	<delete id="todoRemove" parameterType="calendarVO">
+		DELETE FROM CALENDER
+		WHERE END_TIME = #{endTime}
+		AND STA= #{sta}
+		AND TITLE = #{title}
+	</delete>
+	
+	<!-- 일정 수정하기 -->
+	<update id="updateSchedule" parameterType="calendarVO">
+		UPDATE CALENDER
+		SET      STA = #{sta}
+		, END_TIME =#{endTime}
+		, ALL_DAY = #{allDay}
+		WHERE EMP_CD =  #{empCd} AND CALD_CD = #{caldCd}
+	</update>
+ 	
+ 	
+ 	<update id="multiSchedule" parameterType="java.util.List">
+<!-- 		<selectKey resultType="int" order="BEFORE" keyProperty="caldCd"> -->
+<!-- 			SELECT NVL(MAX(TO_NUMBER(CALD_CD)),0)+ 1 -->
+<!-- 			FROM  CALENDER -->
+<!-- 		</selectKey> -->
+		<foreach collection="list"  item="calendar" index="index" open="INSERT ALL"  close="SELECT * FROM DUAL"  separator=" ">
+			INTO CALENDER(
+									CALD_CD
+									, TITLE
+									, REG_DT
+									, STA
+									, END_TIME
+									, ALL_DAY
+									, EMP_CD
+									, COLOR
+									, TEXT_COLOR
+									)
+			VALUES(
+							#{calendar.caldCd}
+							, #{calendar.title}
+							, SYSDATE
+							, #{calendar.sta}
+							, #{calendar.endTime}
+							, #{calendar.allDay}
+							, #{calendar.empCd}
+							, #{calendar.color}
+							, #{calendar.textColor}
+							)
+		</foreach>
+	</update>
+ 	
+	<select id="checkCald" parameterType="calendarVO" resultType="calendarVO">
+		SELECT NVL(MAX(TO_NUMBER(CALD_CD)),0)+ 1 AS CALD_CD 
+		FROM  CALENDER
+	</select> 	
+ 	
+ 	
+</mapper>
+
+
+
+
+
+
+
+
+
+

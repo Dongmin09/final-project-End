@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sw.ddit.mention.mapper.MentionMapper">
+	<select id="mentionList" resultType="mentionVO">
+		SELECT A.EMP_CD
+		     , A.EMP_NM
+		     , A.PROFILE
+		     , B.DEP_NM
+		FROM   EMPLOYEE A, DEPARTMENT B
+		WHERE  A.DEP_CD = B.DEP_CD
+	</select>
+</mapper>

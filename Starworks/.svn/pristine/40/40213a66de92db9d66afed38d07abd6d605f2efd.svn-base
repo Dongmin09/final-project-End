@@ -1,0 +1,448 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sw.ddit.mail.mapper.MailMapper">
+
+	<!-- 받은 메일함 메일 리스트 -->
+	<select id="selectMailList" parameterType="String" resultType="egovframework.rte.psl.dataaccess.util.EgovMap">
+		SELECT 
+			R.EML_CD 
+			, R.EML_CALL_CD 
+			, R.SER_NO 
+			, R.REC_NM 
+			, R.EML_REF_YN 
+			, CASE
+				WHEN R.EML_READ_YN = '1' THEN '읽음'
+				ELSE '읽지않음'
+			END AS LOC_NAME 
+			, R.EML_DEL_WH 
+			, M.EMP_CD 
+			, M.EML_TIT 
+			, M.EML_CON 
+			, M.EML_DEND_DT 
+			, M.EML_SIT_CD 
+			, M.EML_NO 
+			, R.EML_READ_YN,
+			M.EML_IMP_YN 
+		FROM RECEIVER R
+		LEFT OUTER JOIN MAIL M ON (R.EML_CD  = M.EML_CD)
+		WHERE R.EML_CALL_CD  = #{empCd} 
+		AND R.EML_DEL_WH != 'Y'
+		ORDER BY M.EML_DEND_DT DESC
+	</select>
+	
+	<!-- 메인화면 메일 리스트 -->
+	<select id="mainList" parameterType="String" resultType="egovframework.rte.psl.dataaccess.util.EgovMap">		
+		SELECT 
+			R.EML_CD 
+			, R.EML_CALL_CD 
+			, R.SER_NO 
+			, R.REC_NM 
+			, R.EML_REF_YN 
+			, CASE
+				WHEN R.EML_READ_YN = '1' THEN '읽음'
+				ELSE '읽지않음'
+			END AS LOC_NAME 
+			, R.EML_DEL_WH 
+			, M.EMP_CD 
+			, M.EML_TIT 
+			, M.EML_CON 
+			, M.EML_DEND_DT 
+			, M.EML_SIT_CD 
+			, M.EML_NO 
+			, R.EML_READ_YN,
+			M.EML_IMP_YN 
+		FROM RECEIVER R
+		LEFT OUTER JOIN MAIL M ON (R.EML_CD  = M.EML_CD)
+		WHERE R.EML_CALL_CD  = #{empCd} 
+		AND R.EML_DEL_WH != 'Y' 
+		AND ROWNUM &lt;= 5  
+		ORDER BY M.EML_DEND_DT DESC
+
+	</select>
+	
+	<!-- 관리자 메인화면 메일 리스트 -->
+	<select id="mainMailList" parameterType="String" resultType="egovframework.rte.psl.dataaccess.util.EgovMap">		
+		SELECT 
+			R.EML_CD 
+			, R.EML_CALL_CD 
+			, R.SER_NO 
+			, R.REC_NM 
+			, R.EML_REF_YN 
+			, CASE
+				WHEN R.EML_READ_YN = '1' THEN '읽음'
+				ELSE '읽지않음'
+			END AS LOC_NAME 
+			, R.EML_DEL_WH 
+			, M.EMP_CD 
+			, M.EML_TIT 
+			, M.EML_CON 
+			, M.EML_DEND_DT 
+			, M.EML_SIT_CD 
+			, M.EML_NO 
+			, R.EML_READ_YN,
+			M.EML_IMP_YN 
+		FROM RECEIVER R
+		LEFT OUTER JOIN MAIL M ON (R.EML_CD  = M.EML_CD)
+		WHERE R.EML_CALL_CD  = #{empCd} 
+		AND R.EML_DEL_WH != 'Y' 
+		AND ROWNUM &lt;= 5  
+		ORDER BY M.EML_DEND_DT DESC
+
+	</select>
+	
+	<!-- 메일 상세 -->
+	<select id="selectMailDetail" parameterType="String" resultType="com.sw.ddit.mail.vo.MailVO">
+		SELECT 
+			'[' || D.DEP_NM  || '] ' || X.EMP_NM || ' ' || C.COMM_CD_NM  AS REC_TOT
+			, X.*
+		FROM (	
+			SELECT 
+				A.EML_CD
+			    , A.EMP_CD
+			    , A.EML_TIT
+			    , A.EML_CON
+			    , A.EML_DEND_DT
+			    , TO_CHAR(A.EML_DEND_DT, 'YYYY-MM-DD HH24:MI') EML_DEND_DT_TO_STRING 
+			    , A.EML_SIT_CD
+			    , A.EML_NO
+			    , E.EMP_NM 
+			    , E.DEP_CD 
+			    , E.POSI_CD 
+			FROM MAIL A LEFT OUTER JOIN EMPLOYEE E ON (A.EMP_CD = E.EMP_CD)
+			WHERE EML_CD = #{emlCd}
+		) X LEFT OUTER JOIN DEPARTMENT D ON (X.DEP_CD = D.DEP_CD)
+		LEFT OUTER JOIN COMMON C ON (C.COMM_CD = X.POSI_CD)
+	</select>
+	
+	<!-- 메일 읽음 표시 -->
+	<update id="updateMailRead" parameterType="com.sw.ddit.mail.vo.MailReceiverVO">
+		UPDATE    
+		    RECEIVER
+		SET EML_READ_YN = 1
+		WHERE EML_CD = #{emlCd} 
+		AND EML_CALL_CD = #{emlCallCd}  
+	</update>
+	
+	<!-- 메일 휴지통으로 이동 -->
+	<update id="updateMailTrash" parameterType="string">
+		UPDATE 
+		    MAIL
+		SET EML_DEL_WH = 1
+		WHERE EML_CD = #{emlCd}
+	</update>
+	
+	<!-- 메일 자동완성 -->
+	<select id="autoComplete" parameterType="String" resultType="egovframework.rte.psl.dataaccess.util.EgovMap">
+		SELECT 
+			A.EMP_CD 
+			, A.EMP_ID 
+			, A.EMP_NM 
+			, A.EMP_EML 
+			, B.DEP_CD 
+			, B.DEP_NM 
+			, C.COMM_CD
+			, C.COMM_CD_NM 
+		FROM EMPLOYEE  A
+		LEFT OUTER JOIN DEPARTMENT  B ON (A.DEP_CD = B.DEP_CD)
+		LEFT OUTER JOIN COMMON C ON (A.POSI_CD = C.COMM_CD)
+		WHERE 1 = 1
+		AND (EMP_NM LIKE '%' || #{searchParam} ||'%') 
+		OR (DEP_NM LIKE '%' || #{searchParam} ||'%')
+	
+	</select>
+	
+	<!-- 메일 받는사람 multi select -->
+	<select id="empList" parameterType="com.sw.ddit.mail.vo.MailVO" resultType="egovframework.rte.psl.dataaccess.util.EgovMap">
+		SELECT 
+			A.EMP_CD 
+			, A.EMP_ID 
+			, A.EMP_NM 
+			, B.DEP_CD 
+			, B.DEP_NM 
+			, C.COMM_CD
+			, C.COMM_CD_NM 
+			, '['|| B.DEP_NM || '] ' || A.EMP_NM || ' ' || C.COMM_CD_NM AS TOTAL
+			<if test="@org.apache.commons.lang3.StringUtils@isNotEmpty(emlCd)">
+			, CASE WHEN EMP_CD = (SELECT EMP_CD FROM MAIL WHERE EML_CD = #{emlCd }) THEN 'Y'
+			ELSE 'N'
+			END EMP_SELECTED
+			</if>
+		FROM EMPLOYEE  A
+		LEFT OUTER JOIN DEPARTMENT  B ON (A.DEP_CD = B.DEP_CD)
+		LEFT OUTER JOIN COMMON C ON (A.POSI_CD = C.COMM_CD)
+		ORDER BY DEP_NM
+	</select>
+	
+	<!-- 참조된사람 상세 list  -->
+	<select id="selectRefList" parameterType="com.sw.ddit.mail.vo.MailReceiverVO" resultType="egovframework.rte.psl.dataaccess.util.EgovMap">
+		SELECT 
+			A.EMP_CD 
+			, A.EMP_ID 
+			, A.EMP_NM 
+			, B.DEP_CD 
+			, B.DEP_NM 
+			, C.COMM_CD
+			, C.COMM_CD_NM 
+			, '['|| B.DEP_NM || '] ' || A.EMP_NM || ' ' || C.COMM_CD_NM AS TOTAL
+			<if test="@org.apache.commons.lang3.StringUtils@isNotEmpty(emlCd)"> 
+			, CASE WHEN EMP_CD = (SELECT EMl_CALL_CD FROM RECEIVER R WHERE EML_CD = #{emlCd } AND EML_REF_YN = 'Y' ) THEN 'Y'
+			ELSE 'N'
+			END EMP_SELECTED
+			</if>
+		FROM EMPLOYEE  A
+		LEFT OUTER JOIN DEPARTMENT  B ON (A.DEP_CD = B.DEP_CD)
+		LEFT OUTER JOIN COMMON C ON (A.POSI_CD = C.COMM_CD)
+		ORDER BY DEP_NM
+	</select>
+	
+	
+	
+	<!-- List<MailReceiverVO> mailReceiverVOList -->
+	<update id="updateDel" parameterType="java.util.List">
+		<foreach collection="list" index="index" item="vo" open="DECLARE BEGIN" separator=";" close="; END;">
+		    UPDATE RECEIVER
+			SET EML_DEL_WH = 'Y'
+			WHERE 1 = 1
+			AND EML_CD = #{vo.emlCd}
+			AND EML_CALL_CD = #{vo.emlCallCd}
+		  </foreach> 
+		
+	</update>
+	
+	<!-- 보낸 메일함 삭제 -->
+<!-- 	<update id="sendDel" parameterType="java.util.List"> -->
+<!-- 		<foreach collection="list" index="index" item="vo" open="DECLARE BEGIN" separator=";" close="; END;"> -->
+<!-- 		    UPDATE RECEIVER -->
+<!-- 			SET EML_DEL_WH = 'Y' -->
+<!-- 			WHERE 1 = 1 -->
+<!-- 			AND EML_CD = #{vo.emlCd} -->
+<!-- 			AND EML_CALL_CD = #{vo.emlCallCd} -->
+<!-- 		  </foreach>  -->
+		
+<!-- 	</update> -->
+	
+	<!-- 이메일등록 -->
+	<insert id="insertMail" parameterType="com.sw.ddit.mail.vo.MailVO">
+		<selectKey keyProperty="emlCd" resultType="String" order="BEFORE">
+			SELECT 
+				'mail'|| LPAD(NVL(MAX(SUBSTR(EML_CD,5,3)),0)+1,3,'0')   
+			FROM MAIL 
+		</selectKey>
+		
+		INSERT INTO MAIL
+		(
+			EML_CD,
+			EMP_CD,
+			EML_TIT,
+			EML_CON,
+			EML_DEND_DT,
+			EML_SIT_CD,
+			EML_IMP_YN, 
+			ATCH_FILE_CD
+		)
+		VALUES
+		(
+			#{emlCd},
+			#{empCd},
+			#{emlTit}, 
+			#{emlCon},
+			sysdate,
+			'0',
+			#{emlImpYn} ,
+			#{attchFileCd} 
+		)
+	</insert>
+	
+	<!-- 첨부파일 key select -->
+	<select id="selectMailFileKey" resultType="String">
+		SELECT 
+			'mail'|| LPAD(NVL(MAX(SUBSTR(ATCH_FILE_CD,5,3)),0)+1,3,'0')   
+		FROM TOTAL_ATCH_FILE 
+		WHERE SUBSTR(ATCH_FILE_CD,1,4) = 'mail'
+	</select>
+	
+	<!-- 메일 첨부파일 INSERT -->
+	<insert id="insertMailFile" parameterType="com.sw.ddit.common.vo.AttachFileVO">
+		INSERT INTO TOTAL_ATCH_FILE
+		(
+			ATCH_FILE_CD
+			, ATCH_FILE_NO
+			, ATCH_FILE_NM
+			, ATCH_FILE_PATH
+			, ATCH_FILE_EXTEN
+			, ATCH_FILE_UPLO_DT
+			, ATCH_FILE_SIZE
+			, ATCH_FILE_ORG_NM
+			, FILE_SIT_CD
+		)
+		VALUES
+		(
+			#{atchFileCd },
+			#{atchFileNo }, 					<!-- 공지사항은 list가 아니라서 하드코딩함 -->
+			#{atchFileNm },
+			#{atchFilePath },
+			#{atchFileExten },
+			TO_CHAR(sysdate,'YYYY-MM-DD'),
+			#{atchFileSize },
+			#{atchFileOrgNm },
+			'1'
+		)
+	
+	</insert>
+	
+	<!-- 이메일 수신자  -->
+	<insert id="insertMailReceiver" parameterType="com.sw.ddit.mail.vo.MailReceiverVO">
+		
+		INSERT INTO RECEIVER
+		(
+			EML_CD
+			, EML_CALL_CD
+			, SER_NO
+			, REC_NM
+			, EML_REF_YN
+		)
+		VALUES
+		(
+			#{emlCd }
+			, #{emlCallCd }
+			, #{serNo }
+			, #{recNm }
+			, #{emlRefYn}
+		)
+	
+	</insert>
+	
+	<!-- 휴지통 리스트 -->
+	<select id="delList" parameterType="com.sw.ddit.mail.vo.MailVO" resultType="com.sw.ddit.mail.vo.MailVO">
+		SELECT  
+			R.EML_CD
+			, R.EML_CALL_CD
+			, R.SER_NO
+			, R.REC_NM
+			, R.EML_REF_YN
+			, R.EML_DEL_WH
+			, R.EML_READ_YN
+			, M.EML_TIT 
+			, M.EML_CON 
+			, M.EML_DEND_DT 
+			, TO_CHAR(M.EML_DEND_DT, 'YYYY-MM-DD HH24:MI') EML_DEND_DT_TO_STRING
+			, M.EML_IMP_YN 
+		FROM RECEIVER R
+		INNER JOIN MAIL M  
+		ON (R.EML_CD = M.EML_CD)
+		WHERE EML_CALL_CD = #{emlCallCd}
+		AND R.EML_DEL_WH  = 'Y'
+	</select>
+	
+	<!-- 메일 삭제-->
+	<delete id="deleteMail" parameterType="com.sw.ddit.mail.vo.MailVO">
+		<foreach collection="list" index="index" item="vo" open="DECLARE BEGIN" separator=";" close="; END;">
+			DELETE FROM MAIL WHERE EML_CD = #{vo.emlCd}
+		</foreach> 
+	</delete>
+	
+	<select id="selectAtchFileCd" parameterType="String" resultType="String">
+		SELECT ATCH_FILE_CD 
+		FROM MAIL  
+		WHERE EML_CD = #{emlCd}
+		AND ROWNUM = 1
+	</select>
+	
+	<delete id="deleteMailFileList" parameterType="com.sw.ddit.mail.vo.MailReceiverVO">
+		DELETE FROM TOTAL_ATCH_FILE 
+		WHERE ATCH_FILE_CD  = #{atchFileCd}
+	</delete>
+
+	
+	<!-- 보낸메일함 -->
+	<select id="sendList" parameterType="com.sw.ddit.mail.vo.MailVO" resultType="com.sw.ddit.mail.vo.MailVO">
+		SELECT
+			M.EML_CD ,
+			M.EMP_CD ,
+			M.EML_TIT ,
+			M.EML_CON ,
+			TO_CHAR(M.EML_DEND_DT, 'YYYY-MM-DD HH24:MI') EML_DEND_DT_TO_STRING ,
+			M.EML_SIT_CD ,
+			M.EML_NO,
+			M.EML_SEND_YN,
+			CASE
+				WHEN M.EML_READ_YN = '1' THEN '읽음'
+				ELSE '읽지않음'
+			END AS LOC_NAME,
+			M.EML_READ_YN,
+			M.EML_IMP_YN 
+		FROM
+			MAIL M
+		WHERE
+			M.EMP_CD = #{emlCallCd}
+		ORDER BY EML_DEND_DT DESC
+	</select>
+		
+	<!-- 메일 상세보기 받는사람 리스트  -->
+	<select id="selectReceiverList" parameterType="com.sw.ddit.mail.vo.MailVO" resultType="egovframework.rte.psl.dataaccess.util.EgovMap">
+		SELECT 
+			'[' || D.DEP_NM  || '] ' || X.EMP_NM || ' ' || C.COMM_CD_NM  AS REC_TOT
+			, X.*
+		FROM (	
+			SELECT 
+				R.EML_CD
+				, R.EML_CALL_CD
+				, R.SER_NO
+				, R.REC_NM
+				, R.EML_REF_YN
+				, R.EML_DEL_WH
+				, R.EML_READ_YN
+				, E.POSI_CD 
+				, E.DEP_CD 
+				, E.EMP_NM 
+			FROM RECEIVER R LEFT OUTER JOIN EMPLOYEE E ON (R.EML_CALL_CD = E.EMP_CD)
+		) X LEFT OUTER JOIN DEPARTMENT D ON (D.DEP_CD = X.DEP_CD)
+			LEFT OUTER JOIN COMMON C ON (C.COMM_CD = X.POSI_CD)
+		WHERE EML_CD = #{emlCd}
+	</select>
+	
+	<!-- 메일 상세보기 첨부파일 리스트 -->
+	<select id="selectAtchMailList" parameterType="com.sw.ddit.mail.vo.MailVO" resultType="egovframework.rte.psl.dataaccess.util.EgovMap">
+		SELECT 
+			CASE WHEN ATCH_FILE_EXTEN LIKE '%text%' THEN 'tag tag-attachments-sm rounded-3 bg-info'
+				WHEN ATCH_FILE_EXTEN LIKE '%xls%' THEN 'tag tag-attachments-sm rounded-3 bg-success'
+				WHEN ATCH_FILE_EXTEN LIKE '%pdf%' THEN 'tag tag-attachments-sm rounded-3 bg-danger'
+				WHEN ATCH_FILE_EXTEN LIKE '%zip%' THEN 'tag tag-attachments-sm rounded-3 bg-warning'
+			ELSE 'tag tag-attachments-sm rounded-3 bg-primary'
+			END FILE_CLASS
+			, ATCH_FILE_CD
+			, ATCH_FILE_NO
+			, ATCH_FILE_NM
+			, ATCH_FILE_PATH
+			, ATCH_FILE_DWNLD_TERM
+			, ATCH_FILE_EXTEN
+			, ATCH_FILE_UPLO_DT
+			, ATCH_FILE_SIZE
+			, ATCH_FILE_ORG_NM
+			, FILE_SIT_CD
+		FROM 
+			TOTAL_ATCH_FILE
+		WHERE ATCH_FILE_CD  = (
+			SELECT ATCH_FILE_CD 
+			FROM MAIL
+			WHERE EML_CD = #{emlCd}
+		)
+	</select>
+	
+	<!-- 메일 전달 & 답장 form select -->
+	<select id="selectMailFileDetail" parameterType="com.sw.ddit.mail.vo.MailReceiverVO" resultType="com.sw.ddit.common.vo.AttachFileVO">
+<!-- 		SELECT  -->
+<!-- 			X.ATCH_FILE_CD  -->
+<!-- 			, X.ATCH_FILE_NO  -->
+<!-- 			, X.ATCH_FILE_NM  -->
+<!-- 			, X.ATCH_FILE_PATH  -->
+<!-- 			, X.ATCH_FILE_EXTEN  -->
+<!-- 			, X.ATCH_FILE_ORG_NM -->
+<!-- 		FROM NOTICE A RIGHT OUTER JOIN TOTAL_ATCH_FILE X  -->
+<!-- 		ON (A.ATCH_FILE_CD = X.ATCH_FILE_CD) -->
+<!-- 		WHERE NOTI_NO = #{notiNo} -->
+	
+	</select>
+	
+</mapper>

@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace : xml파일은 여러개일 수 있음. 
+이를 구별하기 위한 식별 용도로 사용 -->
+<mapper namespace="com.sw.ddit.commu.mapper.BoardMapper">
+	
+	<!-- 커뮤니티 리스트 조회 -->
+	<select id="selectCommuList" resultType="egovframework.rte.psl.dataaccess.util.EgovMap">
+		SELECT ROWNUM RNUM, X.* 	
+		FROM (
+			SELECT 
+				A.COM_NO
+				, A.EMP_CD
+				, A.TIT
+				, A.CON
+				, TO_CHAR(A.REG_DT,'YY"년 "MM"월 "DD"일"') REG_DT
+				, A.VIEW_CNT
+				, B.EMP_NM
+				, A.HIT_CNT
+				, A.DE_HIT_CNT
+		        , (SELECT  COUNT(CMMT_NO)
+		           FROM    COM_CMMT
+		           WHERE   COM_NO = A.COM_NO) as COM_CMMT
+			FROM COMMUNITY A
+			LEFT OUTER JOIN EMPLOYEE B ON (A.EMP_CD = B.EMP_CD)
+			ORDER BY A.COM_NO 
+		) X
+	
+	</select>
+	
+	<!-- 메인 커뮤니티 리스트 조회 -->
+	<select id="mainCommuList" resultType="egovframework.rte.psl.dataaccess.util.EgovMap">
+		SELECT 
+			A.COM_NO
+			, A.EMP_CD
+			, A.TIT
+			, A.CON
+			, TO_CHAR(A.REG_DT,'YY"년 "MM"월 "DD"일"') REG_DT
+			, A.VIEW_CNT
+			, B.EMP_NM
+			, A.HIT_CNT
+			, A.DE_HIT_CNT
+	        , (SELECT  COUNT(CMMT_NO)
+	           FROM    COM_CMMT
+	           WHERE   COM_NO = A.COM_NO) as COM_CMMT
+		FROM COMMUNITY A
+		LEFT OUTER JOIN EMPLOYEE B ON (A.EMP_CD = B.EMP_CD)
+		WHERE ROWNUM &lt;= 5
+		ORDER BY A.COM_NO 
+	</select>
+	
+	<!-- 커뮤니티 상세 조회 -->
+	<select id="selectCommuDetail" parameterType="com.sw.ddit.commu.vo.CommuVO" resultType="com.sw.ddit.commu.vo.CommuVO">
+		SELECT 
+			A.COM_NO
+			, A.EMP_CD
+			, A.TIT
+			, A.CON
+			, TO_CHAR(A.REG_DT,'YY"년 "MM"월 "DD"일"') AS REG_DT
+			, A.VIEW_CNT
+			, A.HIT_CNT
+			, A.DE_HIT_CNT
+			, B.EMP_NM
+		FROM COMMUNITY A
+		LEFT OUTER JOIN EMPLOYEE B ON (A.EMP_CD = B.EMP_CD)
+		WHERE A.COM_NO = #{comNo} 
+	</select>
+	
+	<!-- 상세조회 조회수 +1 -->
+	<update id="updateViewCnt" parameterType="int" >
+		UPDATE 
+			COMMUNITY
+		SET VIEW_CNT = 
+			(SELECT MAX(VIEW_CNT)+1 FROM COMMUNITY WHERE COM_NO = #{comNo}) <!-- 현재 comNo값의 최대값에 +1을 해서 조회수 보여줌  -->
+		WHERE COM_NO = #{comNo}
+	</update>
+	
+	<!-- 추천.비추천 -->
+	<update id="updateHit" parameterType="com.sw.ddit.commu.vo.CommuVO">
+		UPDATE 
+			COMMUNITY
+		<trim prefix="SET" suffixOverrides=",">
+			<if test="'hit'.equals(flg) and @org.apache.commons.lang3.StringUtils@isNotEmpty(flg)">
+				HIT_CNT = (SELECT MAX(HIT_CNT)+1 FROM COMMUNITY WHERE COM_NO  = #{comNo})
+			</if>
+			<if test="'dehit'.equals(flg) and @org.apache.commons.lang3.StringUtils@isNotEmpty(flg)">
+				DE_HIT_CNT = (SELECT MAX(DE_HIT_CNT)+1 FROM COMMUNITY WHERE COM_NO  = #{comNo})
+			</if>
+		</trim>
+		WHERE COM_NO  = #{comNo}
+	</update>
+	
+	<!-- 추천 비추천 list -->
+	<select id="selectHit" parameterType="com.sw.ddit.commu.vo.CommuVO" resultType="com.sw.ddit.commu.vo.CommuVO">
+		SELECT 
+			  A.HIT_CNT
+			, A.DE_HIT_CNT
+		FROM COMMUNITY A
+		WHERE 
+			A.COM_NO = #{comNo} 
+	</select>
+	
+	
+	<!-- 책등록 -->
+	<insert id="insertCommu" parameterType="com.sw.ddit.commu.vo.CommuVO" >
+		<selectKey keyProperty="comNo" resultType="int" order="BEFORE">
+			SELECT NVL(MAX(COM_NO),0)+1 FROM COMMUNITY
+		</selectKey>
+ 	
+		INSERT INTO COMMUNITY 
+		(
+			COM_NO
+			, TIT
+			, CON
+			, REG_DT
+			, VIEW_CNT
+			, EMP_CD	
+			, HIT_CNT
+			, DE_HIT_CNT
+		)
+		VALUES
+		(
+			#{comNo}
+			, #{tit}
+			, #{con}
+			, TO_CHAR(sysdate,'YYYY-MM-DD')
+			, #{viewCnt}
+			, #{empCd}
+			, #{hitCnt}
+			, #{deHitCnt}
+		)
+	</insert>
+	
+	<!-- 게시글 삭제 -->
+	<delete id="deleteCommu" parameterType="int">
+		DELETE FROM COMMUNITY 
+		WHERE COM_NO = #{comNo}
+	</delete>
+	
+	
+	<!-- 게시글 업데이트 -->
+	<update id="updateCommu" parameterType="commVO">
+		UPDATE COMMUNITY 
+		SET 
+			TIT = #{tit},
+			CON = #{con}, 
+			REG_DT = TO_CHAR(SYSDATE,'YYYY-MM-DD'),
+			EMP_CD = #{empCd}
+		WHERE COM_NO = #{comNo}
+	</update>
+	
+	
+	<!-- 게시글 댓글 list 조회  -->
+	<select id="selectCommuRep" parameterType="com.sw.ddit.commu.vo.CommuVO" resultType="egovframework.rte.psl.dataaccess.util.EgovMap">
+		SELECT 
+			CMMT_NO 
+			, TO_CHAR(REG_DT,'YY"년 "MM"월 "DD"일"') REG_DT
+			, LPAD(' ', 2*(LEVEL-1)) || CON CON
+			, COM_NO
+			, PAR_NO 
+			, EMP_CD
+			, LEVEL LVL
+		FROM COM_CMMT
+		WHERE COM_NO = #{comNo} 
+		START WITH PAR_NO IS NULL
+		CONNECT BY PRIOR CMMT_NO = PAR_NO 
+	</select>
+	
+	<!-- 게시글 댓글 insert -->
+	<insert id="insertCommuRep" parameterType="com.sw.ddit.commu.vo.ComCmmtVO">
+		<selectKey keyProperty="cmmtNo" resultType="int" order="BEFORE">
+			SELECT NVL(MAX(CMMT_NO),0)+1 FROM COM_CMMT
+		</selectKey>
+		
+		INSERT INTO COM_CMMT
+		(
+			CMMT_NO
+			, REG_DT
+			, CON
+			, COM_NO
+			, EMP_CD
+		)
+		VALUES
+		(
+			#{cmmtNo }
+			, TO_CHAR(sysdate,'YYYY-MM-DD')
+			, #{con }
+			, #{comNo , jdbcType=INTEGER }
+			, #{empCd , jdbcType=VARCHAR}
+		)
+	</insert>
+	
+	<!-- 댓글 update -->
+	<update id="updateCommuRep" parameterType="com.sw.ddit.commu.vo.ComCmmtVO">
+		UPDATE COM_CMMT
+		SET
+			 CON = #{con}
+			 , REG_DT = TO_CHAR(sysdate,'YYYY-MM-DD')
+		WHERE CMMT_NO = #{cmmtNo}
+	</update>
+	
+	
+	<!-- 댓글 삭제 -->
+	<delete id="deleteCommuRep" parameterType="com.sw.ddit.commu.vo.ComCmmtVO">
+		DELETE FROM COM_CMMT
+		WHERE CMMT_NO = #{cmmtNo}
+	</delete>
+</mapper>
+
+
+
+
+
+
+
+
+
+

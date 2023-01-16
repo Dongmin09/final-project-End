@@ -1,0 +1,56 @@
+/* Bootstrap3 is required for default styling */
+
+.mentiony-container [contenteditable=true]:empty:not(:focus):before{
+	content:attr(data-placeholder);
+	color:#999999;
+}
+
+.mentiony-container{ 
+	display: block;
+    width: 100%;
+    height: calc(1.5em + 0.75rem + 2px);
+    padding: 0.175rem 2.25rem 0.175rem 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 400;
+    line-height: 2;
+    color: #a8afc7;
+    background-color: #ffffff;
+    background-clip: padding-box;
+    border: 1px solid #e8e8f7;
+    border-radius: 3px;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    height: 38px;
+    border-radius: 5px;
+}
+.mentiony-container .pl0{ padding-left:0;}
+.mentiony-container .mention-input-hidden{float:left; display:inline-block; visibility:hidden; width:0!important;height:0!important; margin:0!important; padding:0!important;opacity:0!important;}
+
+.mentiony-container .mentiony-popover{
+	position:absolute;
+	z-index:1000;
+	top:100%; left:0; /* Default */
+	width:280px;
+	height:auto;
+	max-height:400px;
+	display:none;
+	padding:0;
+	background:#fefefe;
+	overflow: scroll;
+}
+
+.mentiony-container .mentiony-content {
+	outline: none;
+}
+
+.mentiony-list{list-style:none; width: 100%; padding:0;margin: 0;}
+.mentiony-item{border-top:1px solid #eee; height: auto; padding: 5px 10px; cursor:pointer; overflow: hidden;}
+.mentiony-item:first-child{border:none}
+.mentiony-item:hover{ background:#ededed;}
+.mentiony-item.active{ background:#ddd;}
+.mentiony-item img{ width:auto; height:auto; }
+
+.mentiony-item .title, .mentiony-item .help-block{ margin:0;}
+.mentiony-item .title{}
+.mentiony-item .help-block{}
+.mention-area .highlight a.mentiony-link{color:white; background:#009688; padding: 1px 4px; border-radius: 3px;}
+

@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace : xml파일은 여러개일 수 있음. 
+이를 구별하기 위한 식별 용도로 사용 -->
+<mapper namespace="com.sw.ddit.departmentBoard.mapper.DepBoardMapper">
+	
+	<!-- 공지사항 리스트 조회 -->
+	<select id="selectDepBoardList" resultType="egovframework.rte.psl.dataaccess.util.EgovMap">
+		SELECT ROWNUM RNUM, X.* 	
+		FROM ( 
+		    SELECT 
+		        A.DEP_NO
+		        , A.TIT
+		        , A.CON
+		        , A.REG_DT
+		        , A.VIEW_CNT
+		        , A.EMP_CD
+		        , B.EMP_NM
+		    FROM  DEP_BOARD A
+		    LEFT OUTER JOIN EMPLOYEE B ON (A.EMP_CD = B.EMP_CD)
+		    ORDER BY A.DEP_NO 
+		) X
+	</select>
+	
+	<!-- 부서게시판 상세 조회 -->
+	<select id="selectDepBoardDetail" parameterType="com.sw.ddit.departmentBoard.vo.DepBoardVO" resultType="com.sw.ddit.departmentBoard.vo.DepBoardVO">
+		SELECT
+			A.DEP_NO
+			, A.TIT
+			, A.CON
+			, A.REG_DT
+			, A.VIEW_CNT
+			, A.EMP_CD
+			, B.EMP_NM
+		FROM DEP_BOARD A
+		LEFT OUTER JOIN EMPLOYEE B ON (A.EMP_CD = B.EMP_CD)
+		WHERE A.DEP_NO = #{depNo}
+	</select>
+	
+	<!-- 부서게시글 등록 -->
+	<insert id="insertDep" parameterType="com.sw.ddit.departmentBoard.vo.DepBoardVO">
+		<selectKey keyProperty="depNo" resultType="int" order="BEFORE">
+			SELECT NVL(MAX(DEP_NO),0)+1 FROM DEP_BOARD
+		</selectKey>
+		
+		INSERT INTO DEP_BOARD
+		(
+			DEP_NO
+			, TIT
+			, CON
+			, REG_DT
+			, VIEW_CNT
+			, EMP_CD
+		)
+		VALUES
+		(
+			#{depNo}
+			, #{tit}
+			, #{con}
+			, TO_DATE(sysdate,'YYYY-MM-DD')
+			, #{viewCnt}
+			, #{empCd}
+		)	
+	</insert>
+	
+	<delete id="deleteDep" parameterType="int">
+		DELETE FROM DEP_BOARD
+		WHERE DEP_NO = #{depNo}
+	</delete>
+	
+	<update id="updateDep" parameterType="com.sw.ddit.departmentBoard.vo.DepBoardVO">
+		UPDATE DEP_BOARD
+		SET
+			TIT = #{tit},
+			CON = #{con},
+			REG_DT = TO_DATE(sysdate, 'YYYY-MM-DD'),
+			EMP_CD = #{empCd}
+		WHERE DEP_NO = #{depNo}		
+	</update>
+	
+</mapper>

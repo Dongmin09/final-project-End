@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sw.ddit.approval.mapper.DraftMapper">
+	<select id="draft" parameterType="string" resultType="draftVO">
+		SELECT B.DEP_NM
+		     ,(SELECT COMM_CD_NM FROM COMMON WHERE COMM_CD = A.POSI_CD) AS POSI_CD
+		     , A.EMP_NM
+		FROM   EMPLOYEE A, DEPARTMENT B
+		WHERE  A.DEP_CD = B.DEP_CD
+		AND    A.EMP_CD = #{empCd} 
+	</select>
+</mapper>

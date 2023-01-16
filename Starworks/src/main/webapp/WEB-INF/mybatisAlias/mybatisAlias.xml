@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration
+  PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+	<!-- 
+	[마이바티스] 스프링에서 "_"를 사용한 컬럼명을 사용 시(BOOK 테이블의 BOOK_ID)
+	카멜케이스로 읽어줌(bookId)
+	ex) 테이블 컬러명이 member_id인 경우 jsp화면단에서 이 값을 사용 시 memberId로 사용
+	-->
+	<settings>
+		<setting name="mapUnderscoreToCamelCase" value="true"/>
+	</settings>
+	<!-- 자주 사용하는 타입의 별칭을 세팅 -->
+	<typeAliases>
+		<typeAlias type="com.sw.ddit.department.vo.DepartmentVO" alias="depVO"/>
+		<typeAlias type="com.sw.ddit.tree.vo.JstreeVO" alias="treeVO"/>
+		<typeAlias type="com.sw.ddit.employee.vo.AuthVO" alias="authVO"/>
+		<typeAlias type="com.sw.ddit.employee.vo.EmployeeVO" alias="empVO"/>
+		<typeAlias type="com.sw.ddit.common.vo.CommonVO" alias="commVO"/> 
+		<typeAlias type="com.sw.ddit.reference.vo.TotalRefeVO" alias="totalRefeVO"/> 
+		<typeAlias type="com.sw.ddit.approval.vo.ApprovalVO" alias="apprVO"/>
+		<typeAlias type="com.sw.ddit.approval.vo.VacApprovalVO" alias="vacApprVO"/>
+		<typeAlias type="com.sw.ddit.approval.vo.VacUseVO" alias="vacVO"/>
+		<typeAlias type="com.sw.ddit.approval.vo.LineSeqVO" alias="lineVO"/>
+		<typeAlias type="com.sw.ddit.approval.vo.DocumentFormVO" alias="documentVO"/>
+		<typeAlias type="com.sw.ddit.meet.vo.MeetRoomVO" alias="meetRoomVO"/>
+		<typeAlias type="com.sw.ddit.company.vo.CompanyVO" alias="companyVO"/>
+		<typeAlias type="com.sw.ddit.attendance.vo.AttendanceVO" alias="attendanceVO"/>
+		<typeAlias type="com.sw.ddit.meet.vo.MeetBookVO" alias="meetBookVO"/>
+		<typeAlias type="com.sw.ddit.todo.vo.TodoVO" alias="todoVO"/>
+		<typeAlias type="com.sw.ddit.attendance.vo.VacationVO" alias="vacationVO"/>
+		<typeAlias type="com.sw.ddit.calendar.vo.CalendarVO" alias="calendarVO"/>
+		<typeAlias type="com.sw.ddit.mention.vo.MentionVO" alias="mentionVO"/>
+		<typeAlias type="com.sw.ddit.common.vo.AlertVO" alias="alertVO"/>
+		<typeAlias type="com.sw.ddit.approval.vo.DraftVO" alias="draftVO"/>
+	</typeAliases>
+</configuration>
+
+
+
+
+
+
+

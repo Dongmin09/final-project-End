@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans:beans xmlns="http://www.springframework.org/schema/mvc" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xmlns:beans="http://www.springframework.org/schema/beans" 
+xmlns:context="http://www.springframework.org/schema/context" 
+xmlns:security="http://www.springframework.org/schema/security" 
+xmlns:websocket="http://www.springframework.org/schema/websocket" 
+xsi:schemaLocation="http://www.springframework.org/schema/mvc 
+http://www.springframework.org/schema/mvc/spring-mvc.xsd 
+http://www.springframework.org/schema/beans 
+http://www.springframework.org/schema/beans/spring-beans.xsd 
+http://www.springframework.org/schema/context 
+http://www.springframework.org/schema/context/spring-context.xsd 
+http://www.springframework.org/schema/security 
+http://www.springframework.org/schema/security/spring-security-4.2.xsd 
+http://www.springframework.org/schema/websocket 
+http://www.springframework.org/schema/websocket/spring-websocket.xsd">
+<!-- servlet-context.xml : 스프링 웹(view) 설정 파일 -->
+   <!-- DispatcherServlet Context: defines this servlet's request-processing infrastructure -->
+   
+   <!-- Enables the Spring MVC @Controller programming model -->
+   <annotation-driven />
+
+   <!-- Handles HTTP GET requests for /resources/** by efficiently serving up static resources in the ${webappRoot}/resources directory -->
+   <!-- static folder설정(정적 폴더 설정)=>css, images, upload, js -->
+   <!-- http://localhost/resources/ -->
+   <resources mapping="/resources/**" location="/resources/" />
+
+   <!-- Resolves views selected for rendering by @Controllers to .jsp resources in the /WEB-INF/views directory -->
+   <!-- setOrder("2") => tiles를 작동한 후에 ViewResolver를 작동하겠다라는 의미 -->
+   <beans:bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+      <beans:property name="prefix" value="/WEB-INF/views/" />
+      <beans:property name="suffix" value=".jsp" />
+      <beans:property name="order" value="2" />
+   </beans:bean>
+   
+   <!-- Tiles 설정 시작 -->
+   <beans:bean id="tilesConfigurer" 
+      class="org.springframework.web.servlet.view.tiles3.TilesConfigurer">
+      <beans:property name="definitions">
+         <beans:list>
+            <beans:value>/WEB-INF/spring/tiles-config.xml</beans:value>
+         </beans:list>
+      </beans:property>
+   </beans:bean>
+   <!-- UrlBasedViewResolver tilesViewResolver = new UrlBasedViewResolver(); -->
+   <beans:bean id="tilesViewResolver" 
+      class="org.springframework.web.servlet.view.UrlBasedViewResolver">
+      <beans:property name="viewClass" 
+      value="org.springframework.web.servlet.view.tiles3.TilesView" />
+      <beans:property name="order" value="1" />
+   </beans:bean>
+   <!-- Tiles 설정 끝 -->
+   
+   <!-- com.sw.ddit 패키지를 컴포넌트 스캔 대상으로 함 -->
+   <context:component-scan base-package="com.sw.ddit" />
+   
+   <!-- 스프링 시큐리티 애너테이션을 활성화   -->
+   <security:global-method-security pre-post-annotations="enabled"
+    secured-annotations="enabled" />
+   
+   <beans:bean id="multipartResolver"
+      class="org.springframework.web.multipart.support.StandardServletMultipartResolver">
+      
+   </beans:bean>
+   
+   <!-- controller에서 return을 "jsonView"로하면 앞단에 json데이터를 보냄 -->
+	<beans:bean id="jsonView" class="org.springframework.web.servlet.view.json.MappingJackson2JsonView">
+		<beans:property name="contentType" value="application/json;charset=UTF-8" />
+	</beans:bean>
+   
+    <beans:bean class="org.springframework.web.servlet.view.BeanNameViewResolver">
+		<beans:property name="order" value="1"></beans:property>
+	</beans:bean>
+   
+   
+   <!-- For Pagination Tag -->
+    <beans:bean id="imageRenderer" class="com.sw.ddit.egovframework.example.cmmn.web.EgovImgPaginationRenderer"/>
+    
+	<!-- 부트스트랩을 적용한 기본 PageRenderer 들. -->
+    <beans:bean id="bootStrapNumberTypePaginationRenderer" class="com.sw.ddit.egovframework.BootStrapNumberTypePaginationRenderer" />
+    <beans:bean id="bootStrapMoreTypePaginationRenderer" class="com.sw.ddit.egovframework.BootStrapMoreTypePaginationRenderer" />
+
+    <beans:bean id="paginationManager" class="egovframework.rte.ptl.mvc.tags.ui.pagination.DefaultPaginationManager">
+        <beans:property name="rendererType">
+            <beans:map>
+                <beans:entry key="image" value-ref="imageRenderer"/>
+                <beans:entry key="bsNumber" value-ref="bootStrapNumberTypePaginationRenderer" />
+                <beans:entry key="bsMore" value-ref="bootStrapMoreTypePaginationRenderer" />
+            </beans:map>
+        </beans:property>
+    </beans:bean>
+	<!-- /For Pagination Tag -->
+	
+	<beans:bean id="myHandler" class="com.sw.ddit.common.handler.EchoHandler" />
+	<websocket:handlers>
+		<websocket:mapping handler="myHandler" path="/alram" />
+		<websocket:handshake-interceptors>
+			<beans:bean class="org.springframework.web.socket.server.support.HttpSessionHandshakeInterceptor"/>
+		</websocket:handshake-interceptors>
+		<websocket:sockjs websocket-enabled="true"/>
+	</websocket:handlers>
+	
+	
+	<!-- gmailmail설정 -->
+	<beans:bean id="mailSender" class="org.springframework.mail.javamail.JavaMailSenderImpl">
+		<beans:property name="host" value="smtp.gmail.com"/> <!-- 메이서버 호스트 -->
+		<beans:property name="port" value="587"/> <!-- 메이서버 포트번호 -->
+		<beans:property name="username" value="starworks402@gmail.com"/> <!-- 자신의 이메일 아이디 -->
+		<beans:property name="password" value="gjplqxzsnrnrrybp"/> <!-- 자신의 비밀번호 -->
+		<!-- 보안연결 SSL과 관련된 설정 -->
+		<beans:property name="javaMailProperties">
+			<beans:props>
+				<beans:prop key="mail.smtp.auth">true</beans:prop>
+				<beans:prop key="mail.smtp.starttls.enable">true</beans:prop>
+				<beans:prop key="mail.smtps.checkserveridentity">true</beans:prop>
+				<beans:prop key="mail.transport.protocol">smtp</beans:prop>
+				<beans:prop key="mail.smtps.ssl.trust">*</beans:prop>
+				<beans:prop key="mail.debug">true</beans:prop>
+				<beans:prop key="mail.smtp.socketFactory.class">javax.net.ssl.SSLSocketFactory</beans:prop>
+			</beans:props>
+		</beans:property>
+	</beans:bean>
+	
+	  <!--파일업로드 설정(multiparts)  -->
+	<beans:bean id="filterMultipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+	    <beans:property name="defaultEncoding" value="utf-8"/>
+	<!-- 파일업로드 크기 20MB로 설정 -->
+	    <beans:property name="maxUploadSize" value="209715200"/>
+	</beans:bean>
+   
+   
+</beans:beans>
+
+
+
+
+
+
+
+
+
+

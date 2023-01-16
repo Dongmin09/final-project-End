@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sw.ddit.common.mapper.AlertMapper">
+	<insert id="alertInsert" parameterType="alertVO">
+		INSERT INTO ALERT(ALR_NO, ALR_CON, ALR_PARAM, EMP_CD, FROM_NM, ALR_TIT, ALR_TYPE) 
+		VALUES(ALR_SEQ.NEXTVAL, #{alrCon}, ${alrParam}, #{empCd}, (SELECT EMP_NM FROM EMPLOYEE WHERE EMP_CD = #{fromNm}), #{alrTit}, #{alrType})
+	</insert>
+	<select id="alertList" parameterType="string" resultType="alertVO">
+		SELECT ALR_NO
+		     , ALR_SIT_CD
+		     , ALR_DT
+		     , ALR_CON
+		     , ALR_PARAM
+		     , EMP_CD
+		     , FROM_NM
+		     , ALR_TIT
+		     , ALR_TYPE
+		FROM   ALERT
+		WHERE  EMP_CD = #{empCd}
+		AND    ALR_SIT_CD = 0
+		ORDER BY ALR_NO DESC
+	</select>
+	<update id="alertCheck" parameterType="int">
+		UPDATE ALERT
+		SET    ALR_SIT_CD = 1
+		WHERE  ALR_NO = #{alrNo}
+	</update>
+	<select id="alertCount" parameterType="string" resultType="int">
+		SELECT COUNT(ALR_NO) 
+		FROM   ALERT 
+		WHERE  EMP_CD = #{empCd}
+		AND    ALR_SIT_CD = 0
+	</select>
+</mapper>

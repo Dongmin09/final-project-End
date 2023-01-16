@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sw.ddit.employee.mapper.PositionMapper">
+
+ <!-- 처음 회원가입 시 직급과 부서가 설정되지 않은 직원 직급, 권한 부여하기  -->
+ 
+ 	<!-- 직급 부서가 설정되지 않은 최초 회원가입자 불러오기 -->
+	<select id="notPosiList" parameterType="empVO" resultType="empVO">
+		SELECT 
+		        A.EMP_CD
+		        , A.EMP_ID
+		        , (SELECT COMM_CD_NM FROM  COMMON B WHERE A.POSI_CD = B.COMM_CD) AS POSI_CD
+		        , A.DEP_CD
+		        , A.EMP_NM
+		        , EMP_SIT_CD
+		        , EMP_EML
+		        , EMP_TEL
+		        , EMP_SIGN_DT
+		FROM EMPLOYEE A
+		WHERE  A.DEP_CD IS NULL
+		AND A.POSI_CD IS NULL
+		AND CO_CD = 'DDIT'
+	</select>
+	
+	<!-- 공통코드의 직급을 불러오기 -->
+	<select id="positionList" parameterType="commVO" resultType="commVO">
+		SELECT COMM_CD, GRP_CD, COMM_CD_NM
+		FROM COMMON
+		WHERE GRP_CD = 'POSITION'
+	</select>
+	
+	<!-- 부서테이블의 팀을 불러오기 -->
+	<select id="departmentList" parameterType="depVO" resultType="depVO">
+		SELECT
+					 DEP_CD
+					 , DEP_NM
+					 , DEP_PAR
+		FROM DEPARTMENT
+		WHERE CO_CD = 'DDIT'
+		AND DEP_NM LIKE '%팀'
+		ORDER BY DEP_CD ASC
+	</select>
+	
+	
+	<!-- 회원가입한 직원에게 직급, 부서, 재직상태 설정하기 -->
+	<update id="empUpdate" parameterType="empVO">
+		UPDATE EMPLOYEE
+		SET        DEP_CD = #{depCd}, POSI_CD =  #{posiCd}, EMP_SIT_CD = #{empSitCd}, ENABLED = 1
+		WHERE   EMP_CD = #{empCd}
+	</update>
+	
+	<!-- 전체 회원 정보  -->
+	<select id="allList" parameterType="empVO" resultType="empVO">
+		SELECT 
+		              EMP_CD
+		            , EMP_ID
+		            , EMP_PW
+		            , EMP_NM
+		            , EMP_EML
+		            , POST
+		            , ADDR
+		            , DET_ADDR
+		            , EMP_TEL
+		            , EMP_SIGN_DT
+		            , (SELECT COMM_CD_NM FROM  COMMON B WHERE A.POSI_CD = B.COMM_CD) AS POSI_CD
+		            , FAIL_CNT
+		            , (SELECT COMM_CD_NM FROM  COMMON B WHERE A.EMP_SIT_CD = B.COMM_CD) AS EMP_SIT_CD
+		            , APPR_SIGN_PATH
+		            , PROFILE
+		            , ENABLED
+		            , (SELECT DEP_NM FROM DEPARTMENT B WHERE A.DEP_CD = B.DEP_CD) AS DEP_CD
+		FROM EMPLOYEE A
+		WHERE EMP_SIT_CD IS NOT NULL
+	</select>
+	
+	<!-- 재직상태 코드 불러오기 -->
+	<select id="workList" parameterType="commVO" resultType="commVO">
+		SELECT 
+					  COMM_CD
+					, GRP_CD
+					, COMM_CD_NM
+					, COMM_CD_EXP
+					, COMM_CD_YN
+		FROM COMMON
+		WHERE COMM_CD_YN ='Y'
+		AND GRP_CD = 'WORK'
+	</select>
+	
+	<!--  권한 코드 불러오기 -->
+	<select id="authList" parameterType="commVO" resultType="commVO">
+		SELECT 
+					  COMM_CD
+					, GRP_CD
+					, COMM_CD_NM
+					, COMM_CD_EXP
+					, COMM_CD_YN
+		FROM COMMON
+		WHERE COMM_CD_YN ='Y'
+		AND GRP_CD = 'AUTH'
+	</select>
+	
+	<!-- 직원 삭제하기(or 가입 거절) -->
+	<delete id="empDelete" parameterType="empVO">
+		DELETE FROM EMPLOYEE
+		WHERE EMP_CD = #{empCd} 
+	</delete>
+	
+	<!-- 개인 직원 정보 확인하기 -->
+	<select id="empDetail" parameterType="empVO" resultType="empVO">
+		SELECT
+		                EMP_CD
+		            ,   EMP_ID
+		            ,   EMP_PW
+		            ,   EMP_NM
+		            ,   EMP_EML
+		            ,   POST
+		            ,   ADDR
+		            ,   DET_ADDR
+		            ,   EMP_TEL
+		            ,   EMP_SIGN_DT
+		            ,   POSI_CD
+		            ,   FAIL_CNT
+		            ,   EMP_SIT_CD
+		            ,   APPR_SIGN_PATH
+		            ,   PROFILE
+		            ,   ENABLED
+		            ,   DEP_CD   
+		FROM EMPLOYEE
+		WHERE EMP_CD = #{empCd} 
+	</select>
+	
+	<!-- 권한정보 insert -->
+	<insert id="authInsert" parameterType="authVO">
+		INSERT INTO AUTH(EMP_CD,	AUTH_CD)
+		VALUES(#{empCd} , #{authCd})
+	</insert>
+	
+	<!-- 직원정보 수정하기 -->
+	<update id="empModify" parameterType="empVO">
+		UPDATE		 EMPLOYEE
+		SET       
+				  EMP_NM = #{empNm}
+				 , DEP_CD =#{depCd}
+				 , EMP_TEL= #{empTel}
+				 , EMP_SIT_CD = #{empSitCd}
+				, POSI_CD = #{posiCd}
+				, POST= #{post}
+				, ADDR = #{addr}
+				, DET_ADDR = #{detAddr}
+				
+				<if test="empSitCd == 'W03'">
+				, LEAVE_DT = sysdate
+				</if> 
+		WHERE EMP_CD = #{empCd}
+	</update>
+	
+	<update id="uploadProfile" parameterType="empVO">
+		UPDATE EMPLOYEE
+		SET PROFILE = #{profile}
+		WHERE EMP_CD = #{empCd}
+	</update>
+	
+	<!-- 휴가도 조금 주기!! -->
+	<insert id="insertVacation" parameterType="vacationVO">
+	<selectKey  resultType="int" order="BEFORE" keyProperty="yearCnt">
+		SELECT 12-TO_CHAR(SYSDATE, 'MM')
+		FROM DUAL
+	</selectKey>
+		INSERT INTO VACATION
+						(EMP_CD, YEAR_CNT)
+		VALUES
+						(#{empCd}, #{yearCnt})
+	</insert>
+	
+</mapper>
+
+
+
+
+
+
+
+
+
+

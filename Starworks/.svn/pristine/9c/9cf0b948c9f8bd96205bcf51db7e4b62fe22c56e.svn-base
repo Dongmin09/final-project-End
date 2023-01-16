@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace : xml파일은 여러개일 수 있음. 이를 구별하기 위한 식별 용도로 사용 -->
+<mapper namespace="com.sw.ddit.chart.mapper.ChartMapper">
+	<select id="depApprCnt" resultType="map">
+		SELECT B.COMM_CD_NM, NVL(A.CNT,0)AS CNT
+		FROM(SELECT SUBSTR(DEP_CD,0,3) AS DEP_CD, COUNT(*) AS CNT
+		FROM APPROVAL
+		WHERE SUBSTR(REG_DT,0,2) LIKE (TO_CHAR(SYSDATE,'yy'))
+		GROUP BY SUBSTR(DEP_CD,0,3))A RIGHT JOIN COMMON B
+		ON A.DEP_CD = B.COMM_CD
+		WHERE B.COMM_CD_EXP = 'D01'
+		ORDER BY B.COMM_CD_NM
+	</select>
+	<select id="depApprCntLast" resultType="map">
+		SELECT B.COMM_CD_NM, NVL(A.CNT,0)AS CNT
+		FROM(SELECT SUBSTR(DEP_CD,0,3) AS DEP_CD, COUNT(*) AS CNT
+		FROM APPROVAL
+		WHERE SUBSTR(REG_DT,0,2) LIKE ((TO_CHAR(add_months(SYSDATE,-12),'yy')))
+		GROUP BY SUBSTR(DEP_CD,0,3))A RIGHT JOIN COMMON B
+		ON A.DEP_CD = B.COMM_CD
+		WHERE B.COMM_CD_EXP = 'D01'
+		ORDER BY B.COMM_CD_NM
+	</select>
+	<select id="meetCnt" resultType="map">
+		SELECT B.MEET_NO,NVL(A.CNT,0)AS CNT
+		FROM(SELECT  MEET_NO, COUNT(*)AS CNT
+		FROM MEET_BOOK
+		GROUP BY MEET_NO,BOOK_DT
+		HAVING BOOK_DT LIKE (TO_CHAR(SYSDATE,'yy') )||'%')A RIGHT JOIN MEET_ROOM B
+		ON A.MEET_NO = B.MEET_NO
+		ORDER BY MEET_NO
+	</select>
+	
+	<select id="meetCntLast" resultType="map">
+		SELECT B.MEET_NO,NVL(A.CNT,0)AS CNT
+		FROM(SELECT  MEET_NO, COUNT(*)AS CNT
+		FROM MEET_BOOK
+		GROUP BY MEET_NO,BOOK_DT
+		HAVING BOOK_DT LIKE (TO_CHAR(add_months(SYSDATE,-12),'yy') )||'%'
+		)A RIGHT  JOIN MEET_ROOM B
+		ON A.MEET_NO = B.MEET_NO
+		ORDER BY MEET_NO
+	</select>
+	
+	<select id="signEmpCnt" resultType="int">
+		SELECT COUNT(EMP_CD)
+		FROM  EMPLOYEE
+		WHERE EMP_SIT_CD = 'W01'
+		AND EMP_SIGN_DT LIKE (TO_CHAR(SYSDATE,'yy'))||'%'
+	</select>
+	
+	<select id="leaveEmpCnt" resultType="int">
+		SELECT COUNT(EMP_CD)
+		FROM  EMPLOYEE
+		WHERE EMP_SIT_CD = 'W03'
+		AND LEAVE_DT LIKE (TO_CHAR(SYSDATE,'yy'))||'%'
+	</select>
+	
+	<select id="depExpense" resultType="map">
+		SELECT B.COMM_CD_NM, NVL(A.PRICE,0)AS PRICE
+		FROM(SELECT SUM(A.PRICE) AS PRICE, A.DEP_CD
+		FROM(SELECT TO_NUMBER(SUBSTR(FORM_CON,INSTR(FORM_CON ,',',-1)+1)) AS PRICE,APPR_NO,SUBSTR(DEP_CD,0,3) AS DEP_CD
+		FROM APPROVAL
+		WHERE SUBSTR(REG_DT,0,2) LIKE (TO_CHAR(SYSDATE,'yy'))
+		AND  FORM_NO = 1)A LEFT JOIN APPROVAL B  ON A.APPR_NO = B.APPR_NO
+		GROUP BY A.DEP_CD)A  RIGHT JOIN COMMON B
+		ON A.DEP_CD = B.COMM_CD
+		WHERE B.COMM_CD_EXP = 'D01'
+		ORDER BY B.COMM_CD_NM    
+	</select>
+</mapper>

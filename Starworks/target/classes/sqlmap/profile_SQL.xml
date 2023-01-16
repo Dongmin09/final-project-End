@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sw.ddit.main.mapper.ProfileMapper">
+
+ <!-- 처음 회원가입 시 직급과 부서가 설정되지 않은 직원 직급, 권한 부여하기  -->
+
+	<!-- 개인 직원 정보 확인하기 -->
+	<select id="empDetail" parameterType="empVO" resultType="empVO">
+		SELECT
+		                EMP_CD
+		            ,   EMP_ID
+		            ,   EMP_PW
+		            ,   EMP_NM
+		            ,   EMP_EML
+		            ,   POST
+		            ,   ADDR
+		            ,   DET_ADDR
+		            ,   EMP_TEL
+		            ,   EMP_SIGN_DT
+		            ,   POSI_CD
+		            ,   FAIL_CNT
+		            ,   EMP_SIT_CD
+		            ,   APPR_SIGN_PATH
+		            ,   PROFILE
+		            ,   ENABLED
+		            ,   DEP_CD   
+		            ,   SIGN
+		FROM EMPLOYEE
+		WHERE EMP_CD = #{empCd} 
+	</select>
+	
+	<!-- 직원정보 수정하기 -->
+	<update id="empModify" parameterType="empVO">
+		UPDATE		 EMPLOYEE
+		SET       
+				 EMP_PW = #{empPw}
+				, POST= #{post}
+				, ADDR = #{addr}
+				, DET_ADDR = #{detAddr}
+				, EMP_EML = #{empEml}
+				, EMP_TEL = #{empTel}
+		WHERE EMP_CD = #{empCd}
+	</update>
+	
+	<!-- 내사진 수정하기!!  -->
+	<update id="uploadProfile" parameterType="empVO">
+		UPDATE EMPLOYEE
+		SET PROFILE = #{profile}
+		WHERE EMP_CD = #{empCd}
+	</update>
+	
+	<!-- 내사인 수정하기!!  -->
+	<update id="uploadSign" parameterType="empVO">
+		UPDATE EMPLOYEE
+		SET SIGN = #{sign}
+		WHERE EMP_CD = #{empCd}
+	</update>
+</mapper>
+
+
+
+
+
+
+
+
+
+

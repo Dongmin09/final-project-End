@@ -1,0 +1,345 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<mapper namespace="com.sw.ddit.approval.mapper.ApprovalMapper">
+	
+	<resultMap type="apprVO" id="apprMap">
+		<result property="apprNo" column="APPR_NO" />
+		<result property="apprTit" column="APPR_TIT" />
+		<result property="regDt" column="REG_DT" />
+		<result property="empCd" column="EMP_CD" />
+		<result property="formNo" column="FORM_NO" />
+		<result property="apprSitCd" column="APPR_SIT_CD" />
+		<result property="writer" column="WRITER" />
+		<collection property="lineSeqVOList" resultMap="lineSeqMap"></collection>
+	</resultMap>
+	
+	<resultMap type="lineVO" id="lineSeqMap">
+		<result property="lineTurn" column="LINE_TURN"/>
+		<result property="apprNo" column="APPR_NO" />
+		<result property="apprSitCd" column="APPR_SIT_CD"/>
+		<result property="apprRea" column="APPR_REA"/>
+		<result property="apprDt" column="APPR_DT"/>
+		<result property="lineYn" column="LINE_YN"/>
+		<result property="empCd" column="EMP_CD"/>
+		<result property="apprNm" column="APPR_NM"/>
+	</resultMap>
+	
+	<!-- 상신함 map  -->
+	<resultMap type="apprVO" id="apprReportMap">
+		<result property="apprNo" column="APPR_NO" />
+		<result property="apprTit" column="APPR_TIT" />
+		<result property="regDt" column="REG_DT" />
+		<result property="empCd" column="EMP_CD" />
+		<result property="formNo" column="FORM_NO" />
+		<result property="writer" column="WRITER" />
+	</resultMap>
+	
+	<!--  대기 목록 조회 APPROVAL : LINE_SEQ = 1 : N  -->
+	<!-- 결재 수신함 대기 요청만..  -->
+	<select id="selectList" parameterType="string" resultType="apprVO">
+		SELECT A.APPR_NO
+			 , A.APPR_TIT
+			 , A.REG_DT
+			 , B.APPR_DT
+			 ,(SELECT EMP_NM
+			   FROM    EMPLOYEE
+			   WHERE   EMP_CD = A.EMP_CD) WRITER
+			 ,(SELECT P.EMP_CD
+			   FROM  LINE_SEQ L, EMPLOYEE P
+			   WHERE L.EMP_CD = #{empCd}
+			   AND   L.APPR_SIT_CD = 'A01'
+			   AND   L.APPR_NO = A.APPR_NO
+			   AND   L.EMP_CD = P.EMP_CD) SIGNER
+			 , B.LINE_TURN
+			 , A.FORM_NO
+			 ,(SELECT COUNT(APPR_NO) 
+			   FROM LINE_SEQ 
+			   WHERE EMP_CD = #{empCd} 
+			   AND APPR_SIT_CD = 'A01') AS COUNT
+		FROM   APPROVAL A, LINE_SEQ B
+		WHERE  A.APPR_NO = B.APPR_NO
+		AND    B.APPR_SIT_CD = 'A01'
+	    AND    B.EMP_CD = #{empCd}
+	    ORDER  BY APPR_NO ASC
+	</select>
+	
+	<!-- 결재 상신함 (모든 정보) -->
+		<select id="selectAllList" parameterType="string" resultType="apprVO">
+			SELECT 
+			A.APPR_NO,
+			A.APPR_TIT,
+			A.REG_DT,
+			B.APPR_DT,
+			(SELECT EMP_NM
+		    FROM    EMPLOYEE 
+		    WHERE   EMP_CD = A.EMP_CD) as writer,
+		    (SELECT EMP_NM
+		     FROM   EMPLOYEE
+		     WHERE  EMP_CD = B.EMP_CD) as signer,
+			A.FORM_NO,
+			(SELECT COUNT(APPR_NO) FROM LINE_SEQ WHERE EMP_CD = #{empCd}) AS count,
+			B.APPR_SIT_CD
+			FROM APPROVAL A, LINE_SEQ B, COMMON C
+			WHERE A.APPR_NO = B.APPR_NO
+			AND   B.APPR_SIT_CD = C.COMM_CD
+		    AND   B.EMP_CD = #{empCd}
+            AND   (B.APPR_SIT_CD = 'A02' 
+            OR   B.APPR_SIT_CD = 'A03')
+            AND B.LINE_TURN != 0
+            ORDER  BY APPR_NO ASC
+		</select>
+	
+	
+	
+	
+	
+	<!-- 상신함(보낸문서)  -->
+	<select id="reportList" parameterType="apprVO" resultType="apprVO">
+		SELECT 
+		APPR_NO,
+		APPR_TIT,
+		REG_DT, 
+		FORM_CON,
+		(SELECT EMP_NM FROM EMPLOYEE WHERE EMP_CD = #{empCd}) AS writer,
+		(SELECT COUNT(APPR_NO) FROM APPROVAL WHERE EMP_CD = #{empCd}) AS count,
+		FORM_NO,
+		APPR_SIT_CD
+		FROM APPROVAL
+		WHERE EMP_CD = #{empCd}
+		ORDER  BY APPR_NO ASC
+		
+		<!-- AND APPR_SIT_CD = #{apprSitCd} -->
+	</select>
+	
+	<insert id="payformInsert" parameterType="apprVO">
+<!-- 	<selectKey keyProperty="apprNo" resultType="string" order="BEFORE"> -->
+<!-- 	SELECT 'A' ||TO_CHAR(SYSDATE, 'YYMMDD')||((NVL(MAX(TO_NUMBER(SUBSTR(APPR_NO,8))),0))+1) as APPR_NO FROM APPROVAL -->
+<!-- 	</selectKey> -->
+	
+	INSERT INTO APPROVAL(
+	APPR_NO,
+	APPR_TIT,
+	REG_DT,
+	FORM_CON,
+	EMP_CD,
+	FORM_NO,
+	APPR_SIT_CD,
+	DEP_CD,
+	DEP_NM
+	)
+	VALUES(
+	#{apprNo},
+	#{apprTit},
+	sysdate,
+	#{formCon},
+	#{empCd},
+	#{formNo},
+	#{apprSitCd},
+	#{depCd},
+	#{depNm}
+	)
+	
+	</insert>
+	
+	<!-- 결재 라인 
+	파라미터 : List<LineSeqVO> lineSeqVOList
+	 -->
+ 	<update id="apprLinsInset" parameterType="java.util.List">
+		<foreach collection="list" item="lineSeqVO" open="INSERT ALL" close="SELECT * FROM DUAL" separator=" ">
+			INTO LINE_SEQ(
+				LINE_TURN
+				, APPR_NO
+				, APPR_SIT_CD
+				, APPR_DT
+				, LINE_YN
+				, EMP_CD
+				, APPR_NM
+				, SIGN
+				)
+			VALUES(
+				#{lineSeqVO.lineTurn}
+				,#{lineSeqVO.apprNo}
+				,#{lineSeqVO.apprSitCd}
+			    ,#{lineSeqVO.apprDt}
+			    ,#{lineSeqVO.lineYn}
+			    ,#{lineSeqVO.empCd}
+			    ,#{lineSeqVO.apprNm}
+			    ,#{lineSeqVO.sign}
+			    )
+		</foreach>
+	</update>
+	
+	<!-- 다중 파일업로드 처리 -->
+	<update id="uploadAction" parameterType="java.util.List">
+		<foreach collection="list" item="attachFileVO" index="index" 
+			open="INSERT ALL" close="SELECT * FROM DUAL" separator=" ">
+			INTO TOTAL_ATCH_FILE(ATCH_FILE_CD, ATCH_FILE_NO, ATCH_FILE_NM, ATCH_FILE_PATH, ATCH_FILE_DWNLD_TERM, 
+			ATCH_FILE_EXTEN, ATCH_FILE_UPLO_DT, ATCH_FILE_SIZE, ATCH_FILE_ORG_NM, FILE_SIT_CD)
+			 VALUES(#{attachFileVO.atchFileCd},(SELECT COUNT(*) FROM TOTAL_ATCH_FILE WHERE ATCH_FILE_CD = #{attachFileVO.atchFileCd})+1,#{attachFileVO.atchFileNm}
+			 	,#{attachFileVO.atchFilePath},null,#{attachFileVO.atchFileExten},sysdate
+			 	,#{attachFileVO.atchFileSize},#{attachFileVO.atchFileOrgNm},#{attachFileVO.fileSitCd})
+		</foreach>
+	</update>
+	
+	<resultMap type="apprVO" id="apprMap2">
+		<result property="apprNo" column="APPR_NO" />
+		<result property="regDt" column="REG_DT" />
+		<result property="formCon" column="FORM_CON" jdbcType="CLOB" javaType="java.lang.String" />
+		<result property="depNm" column="DEP_NM" />
+		<collection property="lineSeqVOList" resultMap="lineSeqMap2"></collection>
+	</resultMap>
+	
+	<resultMap type="lineVO" id="lineSeqMap2">
+		<result property="lineTurn" column="LINE_TURN"/>
+		<result property="apprNo" column="APPR_NO" />
+		<result property="apprSitCd" column="APPR_SIT_CD"/>
+		<result property="apprRea" column="APPR_REA"/>
+		<result property="apprDt" column="APPR_DT"/>
+		<result property="lineYn" column="LINE_YN"/>
+		<result property="empCd" column="EMP_CD"/>
+		<result property="apprNm" column="APPR_NM"/>
+		<result property="sign" column="SIGN"/>
+	</resultMap>
+	
+	<!-- 결재 디테일  -->
+	<select id="payformDetail" parameterType="String" resultMap="apprMap2">
+		SELECT C.APPR_NO
+		 , C.REG_DT
+	     , C.FORM_CON
+	     , C.DEP_NM
+	     , B.LINE_TURN
+	     , B.EMP_CD
+	     , B.APPR_SIT_CD
+	     , B.APPR_REA  
+	     , B.APPR_DT
+	     , B.LINE_YN
+	     , B.APPR_NM
+	     , A.EMP_CD
+	     , A.SIGN
+			FROM   EMPLOYEE A, LINE_SEQ B, APPROVAL C
+			WHERE  A.EMP_CD = B.EMP_CD
+			AND    B.APPR_NO = C.APPR_NO
+			AND    B.APPR_NO = #{apprVO.apprNo} 
+			ORDER  BY LINE_TURN ASC
+    </select> 
+	<select id="sign" parameterType="string" resultType="string">
+		SELECT SIGN
+		FROM   EMPLOYEE
+		WHERE  EMP_CD = #{empCd}
+	</select>
+	<select id="lineSign" parameterType="string" resultType="string">
+		SELECT SIGN
+		FROM   LINE_SEQ
+		WHERE  APPR_NO = #{apprNo}
+	</select>
+	<update id="updateSign" parameterType="hashMap">
+		UPDATE LINE_SEQ
+		SET    SIGN = #{sign}
+		     , APPR_SIT_CD = 'A02'
+		     , LINE_YN = 'Y'
+		WHERE  APPR_NO = #{apprNo}
+		AND    APPR_SIT_CD = 'A01'
+	</update>
+	<update id="updateSign2" parameterType="string">
+		UPDATE LINE_SEQ
+		SET    APPR_SIT_CD = 'A01'
+		WHERE  APPR_NO = #{apprNo}
+		AND    LINE_TURN = (SELECT MIN(LINE_TURN)
+		FROM   LINE_SEQ
+		WHERE  APPR_NO = #{apprNo}
+		AND    APPR_SIT_CD = 'A00') 
+	</update>
+	<update id="apprEnd" parameterType="string">
+		UPDATE APPROVAL   
+		SET    APPR_SIT_CD = 'A02'   
+		WHERE  APPR_NO =    
+		(SELECT APPR_NO    
+		FROM   LINE_SEQ   
+		WHERE  LINE_TURN = 3    
+		AND    LINE_YN = 'Y' 
+		AND    SUBSTR(APPR_NM, 4) = #{empNm})
+	</update>
+	
+	<!-- 반려시 APPROVAL 업데이트  -->
+	<update id="apprReturn" parameterType="apprVO">
+		UPDATE APPROVAL
+		SET APPR_SIT_CD = 'A03'
+		WHERE APPR_NO = 
+		(SELECT APPR_NO
+	 	FROM APPROVAL 
+	 	WHERE APPR_NO = #{apprNo}
+		)
+	</update>
+	
+	<!-- 반려시   LINE_SEQ 업데이트-->
+ 	<update id="ReturnLine" parameterType="lineVO">		
+		UPDATE LINE_SEQ  A
+		SET A.APPR_SIT_CD = 'A03' , A.APPR_REA = #{apprRea}, A.SIGN = 'return.png'
+		WHERE A.APPR_NO = #{apprNo} AND A.APPR_SIT_CD = 'A01'
+	</update> 
+	
+	<!-- 결재반려된 내역 보기 -->
+	<select id="returnAppr"  parameterType="apprVO" resultMap="apprMap">
+		SELECT 
+				A.APPR_NO,
+				A.APPR_TIT,
+				A.REG_DT, 
+				A.FORM_CON,
+				(SELECT C.EMP_NM FROM EMPLOYEE C WHERE C.EMP_CD = #{empCd}) AS writer,
+				(SELECT COUNT(APPR_NO) FROM APPROVAL WHERE EMP_CD = #{empCd}) AS count,
+				A.FORM_NO,
+				A.APPR_SIT_CD
+		        , B.APPR_REA 
+		FROM APPROVAL A, LINE_SEQ B
+		WHERE  A.APPR_NO = B.APPR_NO
+        AND A.EMP_CD = #{empCd}
+        AND B.APPR_REA IS NOT NULL
+	</select>
+	
+	<!-- apprNo 생성 -->
+	<select id="getApprNo" resultType="String">
+		SELECT 'A' ||TO_CHAR(SYSDATE, 'YYMMDD')||((NVL(MAX(TO_NUMBER(SUBSTR(APPR_NO,8))),0))+1) as APPR_NO FROM APPROVAL
+	</select>
+	
+	<!-- 	요청결재 수신  --> 
+	<select id="getReceive" parameterType="string" resultType="int">
+		SELECT COUNT(APPR_NO) FROM LINE_SEQ 
+		WHERE EMP_CD = #{empCd}
+		AND APPR_SIT_CD = 'A01'
+	</select>
+	
+	<!-- 	결재내역 개수 수신  -->
+	<select id="getReceiveCmp" parameterType="string" resultType="int">
+		SELECT COUNT(APPR_NO) FROM LINE_SEQ 
+		WHERE EMP_CD = #{empCd}
+		AND (APPR_SIT_CD = 'A02' OR APPR_SIT_CD = 'A03') 
+		AND LINE_TURN != 0
+	</select>
+	
+	<!-- 	진행결재 상신  -->
+	<select id="getReport" parameterType="string" resultType="int">
+		SELECT COUNT(APPR_NO) FROM 
+		APPROVAL
+		WHERE EMP_CD = #{empCd}
+		AND APPR_SIT_CD = 'A01'
+	</select>
+	
+	<!-- 	완료결재 상신  -->
+	<select id="getReportCmp" parameterType="string" resultType="int"> 
+		SELECT COUNT(APPR_NO) FROM 
+		APPROVAL
+		WHERE EMP_CD = #{empCd}
+		AND APPR_SIT_CD = 'A02'
+	</select> 
+	
+	<!-- 	반려결재 상신  -->
+	<select id="getReportRet" parameterType="string" resultType="int">
+		SELECT COUNT(APPR_NO) FROM 
+		APPROVAL
+		WHERE EMP_CD = #{empCd}
+		AND APPR_SIT_CD = 'A03'
+	</select>
+	
+</mapper>
